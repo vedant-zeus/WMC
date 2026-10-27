@@ -57,6 +57,28 @@ def lan_addresses():
     return [ip for ip in found if not ip.startswith("127.")] or ["127.0.0.1"]
 
 
+import csv
+import numpy as np
+from pulse import SimConfig, LTESimulator
+
+SUMMARY_CSV = os.path.join(HERE, "results", "summary.csv")
+
+
+def clean_metrics(d):
+    """Ensure numpy numbers and NaNs are converted to clean JSON-serializable types."""
+    out = {}
+    for k, v in d.items():
+        if isinstance(v, (np.floating, float)):
+            out[k] = None if np.isnan(v) else round(float(v), 4)
+        elif isinstance(v, (np.integer, int)):
+            out[k] = int(v)
+        elif isinstance(v, (np.ndarray, list)):
+            out[k] = [None if (isinstance(x, (float, np.floating)) and np.isnan(x)) else x for x in v]
+        else:
+            out[k] = v
+    return out
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "PULSE-LTE"
 
@@ -69,8 +91,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
         self.wfile.write(data)
+
+    def do_OPTIONS(self):
+        self._send(204, b"", "text/plain")
 
     def _json(self, obj, code=200):
         self._send(code, json.dumps(obj, separators=(",", ":")), "application/json")
@@ -95,18 +123,95 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, f.read(), "application/javascript")
         elif path == "/api/info":
             self._json({"pulse": True, "join_url": JOIN_URL})
+        elif path == "/api/schemes":
+            self._json({
+                "schemes": [
+                    {"id": "rr", "name": "Round Robin", "description": "Cyclic allocation regardless of channel quality", "category": "Fairness"},
+                    {"id": "maxci", "name": "Max C/I", "description": "Opportunistic scheduling maximizing instant rate", "category": "Throughput"},
+                    {"id": "pf", "name": "Proportional Fair", "description": "Balances instant rate against historical average", "category": "Standard"},
+                    {"id": "mlwdf", "name": "M-LWDF", "description": "Modified Largest Weighted Delay First for real-time QoS", "category": "QoS"},
+                    {"id": "pulse", "name": "PULSE", "description": "Integrated Priority-Urgency + ICA + OLLA + SFR + ECO DTX", "category": "Integrated (Proposed)"}
+                ]
+            })
+        elif path == "/api/summary":
+            if os.path.exists(SUMMARY_CSV):
+                try:
+                    with open(SUMMARY_CSV, mode="r", encoding="utf-8") as f:
+                        reader = csv.DictReader(f)
+                        rows = list(reader)
+                    self._json({"ok": True, "summary": rows})
+                    return
+                except Exception as e:
+                    self._json({"error": str(e)}, 500)
+                    return
+            self._json({"ok": False, "summary": []})
         else:
             self._send(404, "Not found", "text/plain")
 
     def do_POST(self):
         try:
             body = self._body()
-            pid = str(body.get("id", ""))[:32]
-            if not pid:
-                raise ValueError("missing id")
         except (ValueError, json.JSONDecodeError):
             self._json({"error": "bad request"}, 400)
             return
+
+        # Simulation API endpoints (don't require peer id)
+        if self.path == "/api/simulate":
+            try:
+                params = body.get("config", {}) or body
+                cfg_args = {}
+                for key in ["scheduler", "load_scale", "n_tti", "seed", "users_per_cell", "speed_kmh",
+                            "cqi_delay_tti", "olla", "ica", "sfr", "energy", "eco_batching"]:
+                    if key in params:
+                        cfg_args[key] = params[key]
+                if "mix" in params and isinstance(params["mix"], dict):
+                    cfg_args["mix"] = params["mix"]
+                cfg_args["n_tti"] = max(50, min(int(cfg_args.get("n_tti", 300)), 3000))
+                cfg = SimConfig(**cfg_args)
+                sim = LTESimulator(cfg)
+                metrics = clean_metrics(sim.run())
+                self._json({"ok": True, "metrics": metrics, "config": cfg_args})
+            except Exception as e:
+                self._json({"error": f"simulation failed: {str(e)}"}, 500)
+            return
+
+        elif self.path == "/api/compare":
+            try:
+                schedulers = body.get("schedulers", ["rr", "maxci", "pf", "mlwdf", "pulse"])
+                base_cfg = body.get("config", {}) or {}
+                n_tti = max(50, min(int(base_cfg.get("n_tti", 300)), 2000))
+                load = float(base_cfg.get("load_scale", 0.8))
+                seed = int(base_cfg.get("seed", 1))
+                results = {}
+                for s in schedulers:
+                    kw = dict(scheduler=s, n_tti=n_tti, load_scale=load, seed=seed)
+                    if s == "pulse":
+                        kw.update(ica=base_cfg.get("ica", True),
+                                  olla=base_cfg.get("olla", True),
+                                  sfr=base_cfg.get("sfr", True),
+                                  energy=base_cfg.get("energy", True),
+                                  eco_batching=base_cfg.get("eco_batching", True))
+                    if "users_per_cell" in base_cfg:
+                        kw["users_per_cell"] = int(base_cfg["users_per_cell"])
+                    if "speed_kmh" in base_cfg:
+                        kw["speed_kmh"] = float(base_cfg["speed_kmh"])
+                    if "cqi_delay_tti" in base_cfg:
+                        kw["cqi_delay_tti"] = int(base_cfg["cqi_delay_tti"])
+                    if "mix" in base_cfg and isinstance(base_cfg["mix"], dict):
+                        kw["mix"] = base_cfg["mix"]
+                    sim = LTESimulator(SimConfig(**kw))
+                    results[s] = clean_metrics(sim.run())
+                self._json({"ok": True, "results": results, "scenario": {"load": load, "n_tti": n_tti, "seed": seed}})
+            except Exception as e:
+                self._json({"error": f"comparison failed: {str(e)}"}, 500)
+            return
+
+        # Peer sync and room message endpoints (require peer id)
+        pid = str(body.get("id", ""))[:32]
+        if not pid:
+            self._json({"error": "missing id"}, 400)
+            return
+
         now = time.time()
         if self.path == "/api/sync":
             presence = body.get("presence") if isinstance(body.get("presence"), dict) else {}
@@ -135,6 +240,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"ok": True})
         else:
             self._json({"error": "not found"}, 404)
+
 
 
 def main():

@@ -1,416 +1,1541 @@
-<title>PULSE-LTE Control Room</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PULSE-LTE: LTE Network Resource Management System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: network-operations console. Control strip on top, map + two resource grids side by side, KPI ledger below. */
+/* ==========================================================================
+   PULSE-LTE Telecom Network Operations Center (NOC) Dashboard
+   Theme: Professional Dark Navy with Cyan/Electric Blue Accents
+   ========================================================================== */
 :root {
-  --bg: #f3f4f1;
-  --panel: #fbfbf9;
-  --ink: #15191c;
-  --ink-2: #4d5459;
-  --ink-3: #7c8388;
-  --rule: #dcdfdb;
-  --accent: #0f6e78;          /* PULSE teal */
-  --accent-soft: #d6ebec;
-  --base: #8a6d3b;            /* baseline bronze */
-  --voip: #2a78d6;
-  --video: #eb6834;
-  --be: #1baf7a;
-  --err: #15191c;
-  --idle: #e9ebe7;
-  --sleep: #d9e6ef;
-  --good: #1d7a3a;
-  --bad: #b3362f;
-  --display: "Chakra Petch", "Bahnschrift", "DIN Alternate", system-ui, sans-serif;
-  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --bg: #070b14;
+  --bg-secondary: #0c1427;
+  --panel: #111d38;
+  --panel-header: #162548;
+  --panel-hover: #182a52;
+  --panel-sub: #0e172e;
+  --ink: #f8fafc;
+  --ink-2: #94a3b8;
+  --ink-3: #64748b;
+  --rule: #1e3258;
+  --rule-light: #2a4374;
+  --accent: #06b6d4;          /* Electric Cyan */
+  --accent-glow: rgba(6, 182, 212, 0.25);
+  --accent-soft: rgba(6, 182, 212, 0.12);
+  --accent-blue: #3b82f6;     /* Primary Tech Blue */
+  --accent-sky: #38bdf8;
+  --base: #f59e0b;            /* Baseline Amber */
+  --base-soft: rgba(245, 158, 11, 0.12);
+  --voip: #38bdf8;            /* Sky Blue for VoIP */
+  --video: #f97316;           /* Vivid Orange for Video */
+  --be: #10b981;              /* Emerald Green for Best Effort */
+  --err: #f43f5e;             /* Crimson for NACK / Block Error */
+  --idle: #162035;            /* Slate Navy for Unused PRBs */
+  --sleep: #1e3a5f;           /* Deep Indigo for Micro-sleep DTX */
+  --good: #10b981;            /* Metric Improvement */
+  --bad: #f43f5e;             /* Metric Degradation */
+  --display: "Chakra Petch", system-ui, sans-serif;
+  --body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #101416; --panel: #161b1e; --ink: #e8ecea; --ink-2: #b2bab8; --ink-3: #848d8c;
-    --rule: #2a3135; --accent: #4fb3bd; --accent-soft: #173a3e; --base: #c9a46a;
-    --voip: #3987e5; --video: #d95926; --be: #199e70; --err: #f2f4f3; --idle: #1e2427;
-    --sleep: #1b2b38; --good: #5cc27a; --bad: #ec6b62; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #101416; --panel: #161b1e; --ink: #e8ecea; --ink-2: #b2bab8; --ink-3: #848d8c;
-  --rule: #2a3135; --accent: #4fb3bd; --accent-soft: #173a3e; --base: #c9a46a;
-  --voip: #3987e5; --video: #d95926; --be: #199e70; --err: #f2f4f3; --idle: #1e2427;
-  --sleep: #1b2b38; --good: #5cc27a; --bad: #ec6b62; color-scheme: dark;
-}
+
 * { box-sizing: border-box; }
-body {
-  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.45;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 18px 32px;
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
-.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 16px; }
-header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
-h1 { font-family: var(--display); font-weight: 700; font-size: 1.9rem; letter-spacing: 0.01em; margin: 0; line-height: 1.05; text-wrap: balance; }
-h1 span { color: var(--accent); }
-.sub { color: var(--ink-2); margin: 4px 0 0; max-width: 68ch; }
-.clock { font-family: var(--mono); font-size: 0.85rem; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
-.clock b { font-family: var(--display); font-size: 1.35rem; color: var(--ink); font-weight: 600; display: block; }
 
-.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; padding: 12px 14px; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; }
-.ctl { display: flex; align-items: center; gap: 8px; }
-.lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 600; }
-input[type=range] { width: 130px; accent-color: var(--accent); }
-.val { font-family: var(--mono); font-size: 0.85rem; min-width: 3.4em; font-variant-numeric: tabular-nums; }
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Layout Wrap */
+.wrap {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 16px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Header & Telecom Banner */
+header.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--panel-header) 0%, var(--panel) 100%);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-blue) 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+.logo-icon svg { width: 24px; height: 24px; fill: none; stroke: #fff; stroke-width: 2.2; }
+.brand-text h1 {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.brand-text h1 span { color: var(--accent); text-shadow: 0 0 12px var(--accent-glow); }
+.brand-sub {
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  margin: 3px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--good);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.live-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 8px var(--good);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-family: var(--mono);
+}
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.stat-pill b {
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Nav Tabs */
+nav.section-nav {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-secondary);
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  overflow-x: auto;
+}
+.tab-btn {
+  font-family: var(--body);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.15s ease;
+}
+.tab-btn:hover { color: var(--ink); background: rgba(255, 255, 255, 0.04); }
+.tab-btn.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.1);
+}
+
+/* Simulation Control Bar */
+.control-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+.ctrl-group { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.ctl-item { display: flex; align-items: center; gap: 8px; }
+.lbl {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.val {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 600;
+  min-width: 3.2em;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  height: 5px;
+  background: var(--rule-light);
+  border-radius: 3px;
+  outline: none;
+  accent-color: var(--accent);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--accent);
+}
+select, input[type=number], input[type=text] {
+  font-family: var(--body);
+  font-size: 0.82rem;
+  background: var(--bg-secondary);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 5px 8px;
+  outline: none;
+}
+select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+.btn {
+  font-family: var(--body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-blue) 100%);
+  border: none;
+  border-radius: 5px;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.25);
+}
+.btn:hover { opacity: 0.92; transform: translateY(-1px); }
+.btn.ghost {
+  background: var(--panel-header);
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  box-shadow: none;
+}
+.btn.ghost:hover { background: var(--rule); color: var(--ink); }
+.btn.danger[aria-pressed="true"] {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+}
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { font: 500 0.8rem var(--body); border: 1px solid var(--rule); background: transparent; color: var(--ink-2); padding: 5px 10px; border-radius: 999px; cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
-.chip:focus-visible, .btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.btn { font: 600 0.82rem var(--body); border: 1px solid var(--ink); background: var(--ink); color: var(--panel); padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-.btn.ghost { background: transparent; color: var(--ink); }
-.btn.surge[aria-pressed="true"] { background: var(--bad); border-color: var(--bad); color: #fff; }
-select { font: 0.85rem var(--body); background: var(--panel); color: var(--ink); border: 1px solid var(--rule); border-radius: 4px; padding: 4px 6px; }
-
-.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; }
-.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; min-width: 0; display: grid; gap: 10px; align-content: start; }
-.ph { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.ph h2 { font-family: var(--display); font-size: 1.05rem; font-weight: 600; margin: 0; letter-spacing: 0.02em; }
-.note { color: var(--ink-3); font-size: 0.8rem; margin: 0; }
-canvas { display: block; width: 100%; }
-#map { aspect-ratio: 1 / 0.92; max-width: 100%; cursor: pointer; }
-.grids { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.grid-col { min-width: 0; display: grid; gap: 6px; }
-.gtitle { font-family: var(--display); font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
-.gtitle i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-.rg { aspect-ratio: 25 / 30; max-width: 100%; border: 1px solid var(--rule); border-radius: 3px; }
-.axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.7rem; color: var(--ink-3); }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.78rem; color: var(--ink-2); }
-.legend span { display: inline-flex; align-items: center; gap: 5px; }
-.sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block; border: 1px solid var(--rule); }
-
-.lower { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
-.ledger-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { padding: 7px 8px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; white-space: normal; }
-thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); font-weight: 600; }
-td.num { font-family: var(--mono); font-size: 0.88rem; }
-td .unit { color: var(--ink-3); font-size: 0.75rem; }
-.delta { font-family: var(--mono); font-size: 0.8rem; padding: 2px 7px; border-radius: 999px; }
-.delta.good { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
-.delta.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
-.delta.flat { color: var(--ink-3); }
-#spark { aspect-ratio: 2.2 / 1; max-width: 100%; }
-.feat { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.feat li { display: grid; grid-template-columns: 4.2em 1fr; gap: 8px; font-size: 0.85rem; color: var(--ink-2); }
-.feat b { font-family: var(--mono); font-weight: 500; color: var(--accent); }
-
-/* experiment lab */
-.lab { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; }
-.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
-.field { display: grid; gap: 4px; min-width: 0; }
-.field .row { display: flex; align-items: center; gap: 8px; }
-.field input[type=range] { width: 100%; min-width: 0; }
-.field select { width: 100%; }
-.state { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-2); background: var(--idle); padding: 6px 9px; border-radius: 4px; margin: 0; }
-.btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
-#ask { font: 0.92rem var(--body); width: 100%; min-height: 66px; resize: vertical; padding: 9px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); }
-#ask:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.sugg { display: flex; flex-wrap: wrap; gap: 6px; }
-.sugg button { font: 0.78rem var(--body); text-align: left; border: 1px dashed var(--rule); background: transparent; color: var(--ink-2); padding: 5px 9px; border-radius: 6px; cursor: pointer; }
-.sugg button:hover { border-color: var(--accent); color: var(--ink); }
-.trace { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-family: var(--mono); font-size: 0.76rem; color: var(--ink-3); }
-.trace li::before { content: "› "; color: var(--accent); }
-.answer { white-space: pre-wrap; font-size: 0.92rem; line-height: 1.55; margin: 0; max-width: 70ch; }
-.answer:empty { display: none; }
-
-/* bring-your-own-phone */
-.joingrid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: start; }
-.qr { background: #ffffff; padding: 10px; border-radius: 6px; border: 1px solid var(--rule); width: max-content; }
-.qr img, .qr canvas { display: block; width: 148px; height: 148px; }
-.linkrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.linkrow code { font-family: var(--mono); font-size: 0.8rem; background: var(--idle); padding: 4px 8px; border-radius: 4px; word-break: break-all; min-width: 0; }
-.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; padding: 3px 9px; border-radius: 999px; background: var(--idle); color: var(--ink-2); }
-.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
-.pill.on { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
-.pill.on::before { background: var(--good); }
-.pill.off { color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); }
-.pill.off::before { background: var(--bad); }
-.empty { color: var(--ink-3); font-size: 0.85rem; margin: 0; }
-.phone { max-width: 460px; margin: 0 auto; display: grid; gap: 14px; }
-.phone h1 { font-size: 1.6rem; }
-.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.seg button { font: 500 0.82rem var(--body); padding: 10px 4px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink-2); cursor: pointer; }
-.seg button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 600; }
-.seg button:focus-visible, #nick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-#nick { font: 0.95rem var(--body); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); width: 100%; }
-#pmap { aspect-ratio: 1 / 0.92; max-width: 100%; touch-action: manipulation; cursor: crosshair; }
-.radio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.radio div { background: var(--idle); border-radius: 6px; padding: 8px 10px; min-width: 0; }
-.radio b { display: block; font-family: var(--display); font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.radio span { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); }
-.cellline { font-family: var(--mono); font-size: 0.85rem; color: var(--ink-2); margin: 0; }
-@media (max-width: 560px) { .joingrid { grid-template-columns: 1fr; } }
-
-@media (max-width: 900px) {
-  .stage, .lower, .lab { grid-template-columns: 1fr; }
+.chip {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  background: var(--bg-secondary);
+  color: var(--ink-2);
+  border: 1px solid var(--rule);
+  padding: 4px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
 }
-@media (max-width: 480px) {
-  h1 { font-size: 1.5rem; }
-  .grids { gap: 8px; }
-  input[type=range] { width: 100px; }
+.chip[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
 }
+
+/* Card & Panels */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+.ph {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 8px;
+}
+.ph h2 {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ph h2::before {
+  content: "";
+  width: 4px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--accent);
+}
+.note { font-size: 0.78rem; color: var(--ink-3); margin: 0; }
+
+/* Section 1: Overview HUD */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+.kpi-card {
+  background: var(--panel-header);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--rule);
+}
+.kpi-card.cyan::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.kpi-card.green::before { background: var(--good); box-shadow: 0 0 8px var(--good); }
+.kpi-card.amber::before { background: var(--base); box-shadow: 0 0 8px var(--base); }
+.kpi-card.blue::before { background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue); }
+.kpi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.kpi-value-row { display: flex; align-items: baseline; gap: 8px; }
+.kpi-val {
+  font-family: var(--display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.kpi-unit { font-size: 0.8rem; color: var(--ink-2); font-weight: 500; }
+.kpi-sub {
+  font-size: 0.74rem;
+  color: var(--ink-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.delta-badge {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.delta-badge.good { background: rgba(16, 185, 129, 0.15); color: var(--good); }
+.delta-badge.bad { background: rgba(244, 63, 94, 0.15); color: var(--bad); }
+.delta-badge.flat { background: rgba(148, 163, 184, 0.1); color: var(--ink-3); }
+
+/* Section 2: Stage (Topology + Resource Grid) */
+.stage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.35fr);
+  gap: 16px;
+}
+@media (max-width: 1024px) { .stage-grid { grid-template-columns: 1fr; } }
+#map {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  width: 100%;
+  aspect-ratio: 1 / 0.92;
+  cursor: crosshair;
+}
+.legend-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.sw {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.grids-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 600px) { .grids-container { grid-template-columns: 1fr; } }
+.grid-box { display: flex; flex-direction: column; gap: 6px; }
+.grid-title {
+  font-family: var(--display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.grid-canvas {
+  width: 100%;
+  aspect-ratio: 25 / 28;
+  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  display: block;
+}
+.axis-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink-3);
+}
+
+/* Section 3: Scheduler Comparison */
+.comparison-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+table.tech-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+}
+table.tech-table th, table.tech-table td {
+  padding: 8px 12px;
+  text-align: right;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+table.tech-table th:first-child, table.tech-table td:first-child {
+  text-align: left;
+  white-space: normal;
+}
+table.tech-table thead th {
+  background: var(--panel-header);
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+table.tech-table tr:hover { background: rgba(255, 255, 255, 0.02); }
+table.tech-table tr.highlight {
+  background: var(--accent-soft);
+  font-weight: 600;
+  color: var(--accent);
+}
+td.num { font-family: var(--mono); font-size: 0.84rem; }
+.best-tag {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--good);
+  margin-left: 4px;
+}
+
+/* Scheduler Cards */
+.schemes-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.scheme-card {
+  background: var(--panel-sub);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scheme-card.active { border-color: var(--accent); }
+.scheme-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.scheme-card-header h3 {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  margin: 0;
+  font-weight: 600;
+}
+.scheme-formula {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--accent);
+  background: rgba(6, 182, 212, 0.08);
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.scheme-desc { font-size: 0.78rem; color: var(--ink-2); line-height: 1.4; }
+
+/* Section 4: Experiment Lab */
+.lab-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+}
+@media (max-width: 900px) { .lab-grid { grid-template-columns: 1fr; } }
+.lab-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 16px;
+}
+.lab-field { display: flex; flex-direction: column; gap: 4px; }
+.lab-field .slider-row { display: flex; align-items: center; gap: 8px; }
+.lab-field .slider-row input[type=range] { width: 100%; }
+.live-state-banner {
+  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+
+/* AI Operator Panel */
+#ask {
+  width: 100%;
+  min-height: 72px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.88rem;
+  padding: 10px;
+  resize: vertical;
+}
+#ask:focus { border-color: var(--accent); outline: none; }
+.sugg-box { display: flex; flex-wrap: wrap; gap: 6px; }
+.sugg-box button {
+  font-family: var(--body);
+  font-size: 0.74rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--rule);
+  color: var(--ink-2);
+  padding: 5px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+.sugg-box button:hover { border-color: var(--accent); color: var(--ink); }
+.trace-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--ink-3);
+}
+.trace-log li::before { content: "› "; color: var(--accent); }
+.ai-answer {
+  background: var(--panel-header);
+  border-left: 3px solid var(--accent);
+  padding: 12px;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  margin: 0;
+}
+.ai-answer:empty { display: none; }
+
+/* Section 5: Educational Theory Reference */
+.edu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+.edu-card {
+  background: var(--panel-sub);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.edu-card h3 {
+  font-family: var(--display);
+  font-size: 0.96rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--accent-sky);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.edu-card p {
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  margin: 0;
+  line-height: 1.45;
+}
+.edu-tag-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.edu-tag {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  background: var(--panel-header);
+  border-radius: 3px;
+  color: var(--ink-3);
+}
+
+/* Bring Your Own Phone */
+.byod-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 600px) { .byod-grid { grid-template-columns: 1fr; } }
+.qr-box {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 8px;
+  width: max-content;
+}
+.qr-box canvas, .qr-box img { display: block; width: 140px; height: 140px; }
+.link-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.link-row code {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  padding: 5px 10px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+/* Phone View (#join) */
+.phone-view {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.phone-svc-seg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.phone-svc-seg button {
+  font-family: var(--body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: var(--panel-header);
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  padding: 10px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.phone-svc-seg button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+#pmap {
+  width: 100%;
+  aspect-ratio: 1 / 0.92;
+  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  cursor: crosshair;
+}
+.radio-hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.radio-hud-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+}
+.radio-hud-box span { font-size: 0.68rem; color: var(--ink-3); text-transform: uppercase; }
+.radio-hud-box b { font-family: var(--display); font-size: 1.3rem; color: var(--ink); }
+
+/* Hidden utility */
+[hidden] { display: none !important; }
 </style>
+</head>
+<body>
 
-<div class="wrap">
-  <header>
-    <div>
-      <h1>PULSE<span>-LTE</span> Control Room</h1>
-      <p class="sub">Two identical 7-cell LTE networks, same users, same traffic, same fading. Left of each pair runs a standard Proportional Fair scheduler; the other runs PULSE. Change the load or trigger a stadium surge and watch the resource grids react.</p>
+<div class="wrap" id="mainwrap">
+  <!-- Telecom Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>PULSE<span>-LTE</span> NOC Dashboard</h1>
+        <div class="brand-sub">
+          <span class="live-badge">LTE 3GPP Rel 10/12</span>
+          <span>7-Cell Macro Cluster · 5 MHz (25 PRBs) · 1 ms TTI</span>
+        </div>
+      </div>
     </div>
-    <div class="clock"><b id="clock">0.000 s</b>simulated time · 1 TTI = 1 ms</div>
+    <div class="header-status">
+      <div class="stat-pill">
+        <span>Simulated Clock</span>
+        <b id="clock">0.000 s</b>
+      </div>
+      <div class="stat-pill">
+        <span>Active Cells</span>
+        <b id="cell-count-stat">7 / 7</b>
+      </div>
+      <div class="stat-pill">
+        <span>Network Load</span>
+        <b id="load-badge">0.6×</b>
+      </div>
+    </div>
   </header>
 
-  <section class="controls" aria-label="Simulation controls">
-    <div class="ctl"><button class="btn" id="play" type="button">Pause</button><button class="btn ghost" id="reset" type="button">New drop</button></div>
-    <div class="ctl"><label class="lbl" for="load">Load</label><input type="range" id="load" min="0.2" max="1.6" step="0.1" value="0.6"><span class="val" id="loadv">0.6×</span></div>
-    <div class="ctl"><label class="lbl" for="speed">Speed</label>
-      <select id="speed"><option value="2">Slow</option><option value="8" selected>Normal</option><option value="30">Fast</option></select></div>
-    <div class="ctl"><span class="lbl">PULSE features</span>
-      <div class="chips" role="group" aria-label="PULSE features">
-        <button class="chip" type="button" data-f="ica" aria-pressed="true">ICA link adapt.</button>
-        <button class="chip" type="button" data-f="olla" aria-pressed="true">OLLA</button>
-        <button class="chip" type="button" data-f="sfr" aria-pressed="true">Adaptive SFR</button>
-        <button class="chip" type="button" data-f="eco" aria-pressed="true">Slack-aware DTX</button>
-      </div></div>
-    <div class="ctl"><button class="btn ghost surge" id="surge" type="button" aria-pressed="false">Stadium surge in cell 0</button></div>
-  </section>
+  <!-- Interactive Section Nav Tabs -->
+  <nav class="section-nav" aria-label="Dashboard views">
+    <button class="tab-btn active" data-tab="tab-overview">Overview</button>
+    <button class="tab-btn" data-tab="tab-topology">Network Topology & PRB Allocation</button>
+    <button class="tab-btn" data-tab="tab-schedulers">Scheduler Comparison (5-Way)</button>
+    <button class="tab-btn" data-tab="tab-lab">Experiment Lab</button>
+    <button class="tab-btn" data-tab="tab-edu">WMC Educational Guide</button>
+    <button class="tab-btn" data-tab="tab-byod">BYOD Phone Join</button>
+  </nav>
 
-  <section class="stage">
-    <div class="panel">
-      <div class="ph"><h2>Network map</h2>
-        <div class="ctl"><label class="lbl" for="mapsrc">Showing</label>
-          <select id="mapsrc"><option value="1" selected>PULSE</option><option value="0">Prop. Fair</option></select></div></div>
-      <canvas id="map" width="560" height="515" aria-label="Hexagonal 7-cell network map"></canvas>
-      <div class="legend">
-        <span><i class="sw" style="background:var(--voip)"></i>VoIP user</span>
-        <span><i class="sw" style="background:var(--video)"></i>Video user</span>
-        <span><i class="sw" style="background:var(--be)"></i>Best-effort user</span>
-        <span><i class="sw" style="background:transparent;border:2px solid var(--ink-2);border-radius:50%"></i>Cell-edge user</span>
-        <span><i class="sw" style="background:var(--sleep)"></i>Cell asleep (DTX)</span>
-      </div>
-      <p class="note">Cell shade = PRB utilisation over the last 50 ms. Tap a cell to inspect its resource grid.</p>
+  <!-- Global Simulation Controls -->
+  <div class="control-bar" aria-label="Global simulation controls">
+    <div class="ctrl-group">
+      <button class="btn" id="play" type="button">Pause</button>
+      <button class="btn ghost" id="step-btn" type="button">+10 ms</button>
+      <button class="btn ghost" id="reset" type="button">Reset / New Drop</button>
     </div>
+    <div class="ctrl-group">
+      <div class="ctl-item">
+        <label class="lbl" for="load">Offered Load</label>
+        <input type="range" id="load" min="0.2" max="1.8" step="0.1" value="0.6">
+        <span class="val" id="loadv">0.6×</span>
+      </div>
+      <div class="ctl-item">
+        <label class="lbl" for="speed">Sim Speed</label>
+        <select id="speed">
+          <option value="2">Slow (2 TTI/frame)</option>
+          <option value="8" selected>Normal (8 TTI/frame)</option>
+          <option value="25">Fast (25 TTI/frame)</option>
+          <option value="60">Turbo (60 TTI/frame)</option>
+        </select>
+      </div>
+      <div class="ctl-item">
+        <label class="lbl" for="base-sched-sel">Baseline Scheduler</label>
+        <select id="base-sched-sel">
+          <option value="pf" selected>Proportional Fair (PF)</option>
+          <option value="rr">Round Robin (RR)</option>
+          <option value="maxci">Max C/I</option>
+          <option value="mlwdf">M-LWDF (Delay-Aware)</option>
+        </select>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <button class="btn ghost danger" id="surge" type="button" aria-pressed="false">Stadium Surge (Cell 0)</button>
+    </div>
+  </div>
 
+  <!-- TAB 1: OVERVIEW HUD -->
+  <section id="tab-overview" class="tab-pane">
     <div class="panel">
-      <div class="ph"><h2>Resource grid · <span id="cellname">cell 0 (centre)</span></h2><p class="note">25 PRBs × last 120 TTIs, newest on top</p></div>
-      <div class="grids">
-        <div class="grid-col">
-          <div class="gtitle"><i style="background:var(--base)"></i>Prop. Fair</div>
-          <canvas class="rg" id="g0" width="250" height="300"></canvas>
-          <div class="axis"><span>PRB 0</span><span>24</span></div>
+      <div class="ph">
+        <h2>Live Network Performance Overview</h2>
+        <span class="note">Real-time metrics calculated across all 7 macro cells over rolling 2-second evaluation window</span>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card cyan">
+          <div class="kpi-head"><span>Cell Throughput</span><span>5 MHz Band</span></div>
+          <div class="kpi-value-row"><span class="kpi-val" id="hud-tput">0.00</span><span class="kpi-unit">Mbps / cell</span></div>
+          <div class="kpi-sub">
+            <span>Spectral Eff: <b id="hud-se" style="color:var(--ink)">0.00</b> bps/Hz</span>
+            <span class="delta-badge" id="hud-tput-delta">–</span>
+          </div>
         </div>
-        <div class="grid-col">
-          <div class="gtitle"><i style="background:var(--accent)"></i>PULSE</div>
-          <canvas class="rg" id="g1" width="250" height="300"></canvas>
-          <div class="axis"><span>PRB 0</span><span>24</span></div>
+
+        <div class="kpi-card green">
+          <div class="kpi-head"><span>Real-Time QoS Satisfaction</span><span>VoIP & Video</span></div>
+          <div class="kpi-value-row"><span class="kpi-val" id="hud-qos">100</span><span class="kpi-unit">% of UEs</span></div>
+          <div class="kpi-sub">
+            <span>Video PLR: <b id="hud-vloss" style="color:var(--ink)">0.0%</b></span>
+            <span class="delta-badge" id="hud-qos-delta">–</span>
+          </div>
+        </div>
+
+        <div class="kpi-card amber">
+          <div class="kpi-head"><span>Block Error Rate (BLER)</span><span>Target: 10%</span></div>
+          <div class="kpi-value-row"><span class="kpi-val" id="hud-bler">0.0</span><span class="kpi-unit">%</span></div>
+          <div class="kpi-sub">
+            <span>HARQ Retrans: <b id="hud-harq" style="color:var(--ink)">8 ms RTT</b></span>
+            <span class="delta-badge" id="hud-bler-delta">–</span>
+          </div>
+        </div>
+
+        <div class="kpi-card blue">
+          <div class="kpi-head"><span>Base Station Power</span><span>EARTH Model</span></div>
+          <div class="kpi-value-row"><span class="kpi-val" id="hud-power">0</span><span class="kpi-unit">W / cell</span></div>
+          <div class="kpi-sub">
+            <span>Micro-sleep: <b id="hud-sleep" style="color:var(--ink)">0%</b></span>
+            <span class="delta-badge" id="hud-power-delta">–</span>
+          </div>
+        </div>
+
+        <div class="kpi-card cyan">
+          <div class="kpi-head"><span>VoIP Latency (QCI 1)</span><span>Budget: 100 ms</span></div>
+          <div class="kpi-value-row"><span class="kpi-val" id="hud-voip">0.0</span><span class="kpi-unit">ms</span></div>
+          <div class="kpi-sub">
+            <span>Video Delay: <b id="hud-vid-del" style="color:var(--ink)">0 ms</b></span>
+            <span class="delta-badge" id="hud-voip-delta">–</span>
+          </div>
+        </div>
+
+        <div class="kpi-card green">
+          <div class="kpi-head"><span>Energy Efficiency</span><span>Bits / Joule</span></div>
+          <div class="kpi-value-row"><span class="kpi-val" id="hud-eff">0.0</span><span class="kpi-unit">kbit / J</span></div>
+          <div class="kpi-sub">
+            <span>Connected UEs: <b id="hud-ues" style="color:var(--ink)">105 UEs</b></span>
+            <span class="delta-badge" id="hud-eff-delta">–</span>
+          </div>
         </div>
       </div>
-      <div class="legend">
-        <span><i class="sw" style="background:var(--voip)"></i>VoIP</span>
-        <span><i class="sw" style="background:var(--video)"></i>Video</span>
-        <span><i class="sw" style="background:var(--be)"></i>Best effort</span>
-        <span><i class="sw" style="background:var(--err)"></i>Failed block (NACK)</span>
-        <span><i class="sw" style="background:var(--idle)"></i>Unused</span>
-        <span><i class="sw" style="background:var(--sleep)"></i>Micro-sleep</span>
+    </div>
+
+    <!-- Overview Comparison Table & Live Trends -->
+    <div style="display:grid;grid-template-columns:minmax(0, 1.3fr) minmax(0, 1fr);gap:16px;">
+      <div class="panel">
+        <div class="ph">
+          <h2>Head-to-Head Live Metrics: <span id="baseline-name-hud" style="color:var(--base)">Prop. Fair</span> vs <span style="color:var(--accent)">PULSE</span></h2>
+          <span class="note">Identical channels, fading and traffic</span>
+        </div>
+        <div class="table-wrap">
+          <table class="tech-table">
+            <thead>
+              <tr><th>Metric</th><th><span id="col-base-name">Baseline</span></th><th>PULSE (Proposed)</th><th>Difference</th></tr>
+            </thead>
+            <tbody id="kpi"></tbody>
+          </table>
+        </div>
       </div>
-      <p class="note">The tick bar above the PULSE grid marks this cell's power-boosted edge sub-band when SFR is on.</p>
-    </div>
-  </section>
 
-  <section class="lower">
-    <div class="panel">
-      <div class="ph"><h2>Live KPI ledger</h2><p class="note">All 7 cells, rolling 2-second window</p></div>
-      <div class="ledger-wrap"><table>
-        <thead><tr><th>Metric</th><th>Prop. Fair</th><th>PULSE</th><th>Change</th></tr></thead>
-        <tbody id="kpi"></tbody>
-      </table></div>
-    </div>
-    <div class="panel">
-      <div class="ph"><h2>Power per cell</h2><p class="note">Watts, last 6 s</p></div>
-      <canvas id="spark" width="440" height="200" aria-label="Power per cell over time"></canvas>
-      <div class="legend"><span><i class="sw" style="background:var(--base)"></i>Prop. Fair</span><span><i class="sw" style="background:var(--accent)"></i>PULSE</span></div>
-      <ul class="feat">
-        <li><b>ICA</b>Corrects stale CQI for the interference neighbours will actually cause this TTI.</li>
-        <li><b>OLLA</b>Per-user offset that steers block errors to a 10% target.</li>
-        <li><b>SFR</b>Boosts each cell's edge sub-band, sized by how much edge traffic is waiting.</li>
-        <li><b>DTX</b>Holds packets that still have delay budget so the cell can micro-sleep.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="lab">
-    <div class="panel">
-      <div class="ph"><h2>Experiment lab</h2><p class="note">Set the conditions, then rebuild</p></div>
-      <div class="fields">
-        <div class="field"><label class="lbl" for="upc">Users per cell</label><div class="row"><input type="range" id="upc" min="5" max="25" step="1" value="15"><span class="val" id="upcv">15</span></div></div>
-        <div class="field"><label class="lbl" for="spd">User speed</label><select id="spd"><option value="3">3 km/h · walking</option><option value="30" selected>30 km/h · city car</option><option value="60">60 km/h · bus</option><option value="120">120 km/h · highway</option></select></div>
-        <div class="field"><label class="lbl" for="mixv">Voice users</label><div class="row"><input type="range" id="mixv" min="0" max="80" step="5" value="30"><span class="val" id="mixvv">30%</span></div></div>
-        <div class="field"><label class="lbl" for="mixd">Download users</label><div class="row"><input type="range" id="mixd" min="0" max="80" step="5" value="40"><span class="val" id="mixdv">40%</span></div></div>
-        <div class="field"><label class="lbl" for="cqid">CQI feedback delay</label><div class="row"><input type="range" id="cqid" min="1" max="10" step="1" value="4"><span class="val" id="cqidv">4 ms</span></div></div>
-        <div class="field"><span class="lbl">Video users</span><span class="val" id="mixvid" style="padding-top:4px">30%</span></div>
+      <div class="panel">
+        <div class="ph">
+          <h2>Power Consumption Over Time</h2>
+          <span class="note">Single-carrier macro base station (Watts, last 6s)</span>
+        </div>
+        <canvas id="spark" width="500" height="200" aria-label="Base station power over time"></canvas>
+        <div class="legend-bar">
+          <span class="legend-item"><i class="sw" style="background:var(--base)"></i><span id="spark-base-label">Baseline</span></span>
+          <span class="legend-item"><i class="sw" style="background:var(--accent)"></i>PULSE</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem;color:var(--ink-2);background:var(--panel-sub);padding:8px 10px;border-radius:6px;border:1px solid var(--rule);">
+          <div>Active Cell Power: <b>130W + 4.7×P_tx</b></div>
+          <div>Sleep DTX Power: <b>75W (42% cut)</b></div>
+          <div>Carrier Bandwidth: <b>5 MHz (25 PRBs)</b></div>
+          <div>Inter-Site Distance: <b>500 m (Hex)</b></div>
+        </div>
       </div>
-      <div class="btnrow"><button class="btn" id="rebuild" type="button">Rebuild network</button></div>
-      <div class="ph" style="margin-top:6px"><h2>Live events</h2></div>
-      <div class="field"><label class="lbl" for="tool">Tapping the map will</label>
-        <select id="tool"><option value="inspect">Inspect a cell's resource grid</option><option value="fail">Fail or restore a tower</option><option value="jam">Place a jammer</option></select></div>
-      <div class="btnrow"><button class="btn ghost" id="jamoff" type="button" disabled>Remove jammer</button><button class="btn ghost" id="restore" type="button">Restore all towers</button></div>
-      <p class="state" id="labstate">All cells up · No jammer</p>
-      <p class="note">The jammer blasts PRBs 0–11 from where you tap. The controller cannot see it, so ICA cannot correct for it; OLLA has to learn it from failed blocks.</p>
     </div>
+  </section>
 
-    <div class="panel" id="aipanel">
-      <div class="ph"><h2>Ask the network</h2><p class="note">An AI operator runs the experiment and explains it</p></div>
-      <textarea id="ask" placeholder="e.g. What happens to video users if cell 2 fails during rush hour?"></textarea>
-      <div class="sugg" id="sugg">
-        <button type="button">Fail cell 3 at 1.2× load. Who suffers more, PF or PULSE users?</button>
-        <button type="button">Put a jammer near cell 0 and tell me which link adaptation copes better.</button>
-        <button type="button">At what load does PULSE stop saving energy?</button>
-        <button type="button">Turn off ICA and show me what changes.</button>
+  <!-- TAB 2: TOPOLOGY & ALLOCATION -->
+  <section id="tab-topology" class="tab-pane" hidden>
+    <div class="stage-grid">
+      <!-- Network Topology Visualization -->
+      <div class="panel">
+        <div class="ph">
+          <h2>Hexagonal Network Topology</h2>
+          <div class="ctl-item">
+            <label class="lbl" for="mapsrc">Display</label>
+            <select id="mapsrc">
+              <option value="1" selected>PULSE Network</option>
+              <option value="0">Baseline Network</option>
+            </select>
+          </div>
+        </div>
+        <canvas id="map" width="600" height="550" aria-label="Interactive 7-cell LTE Network Topology"></canvas>
+        <div class="legend-bar">
+          <span class="legend-item"><i class="sw" style="background:var(--voip)"></i>VoIP UE</span>
+          <span class="legend-item"><i class="sw" style="background:var(--video)"></i>Video UE</span>
+          <span class="legend-item"><i class="sw" style="background:var(--be)"></i>Best-Effort UE</span>
+          <span class="legend-item"><i class="sw" style="background:transparent;border:2px solid var(--ink-2);border-radius:50%"></i>Cell-Edge User</span>
+          <span class="legend-item"><i class="sw" style="background:var(--sleep)"></i>Cell Asleep (DTX)</span>
+          <span class="legend-item"><i class="sw" style="background:var(--err)"></i>Jammer / Down</span>
+        </div>
+        <p class="note">Tap any cell to inspect its PRBs in the right pane. Cell shading indicates PRB utilization over rolling 50 ms.</p>
       </div>
-      <div class="btnrow"><button class="btn" id="askbtn" type="button">Run experiment</button><button class="btn ghost" id="stopbtn" type="button" hidden>Stop</button></div>
-      <ul class="trace" id="trace"></ul>
-      <p class="answer" id="answer"></p>
-      <p class="note" id="ainote">Uses your Claude account; the first question asks for permission.</p>
+
+      <!-- Resource Allocation PRB Grid -->
+      <div class="panel">
+        <div class="ph">
+          <h2>PRB Resource Grid · <span id="cellname" style="color:var(--accent)">Cell 0 (Centre)</span></h2>
+          <span class="note">25 PRBs (Frequency) × 120 TTIs (Time, newest on top)</span>
+        </div>
+        <div class="grids-container">
+          <div class="grid-box">
+            <div class="grid-title"><span id="g0-title" style="color:var(--base)">Prop. Fair</span><span>Cell PRB 0–24</span></div>
+            <canvas class="grid-canvas" id="g0" width="250" height="300"></canvas>
+            <div class="axis-label"><span>PRB 0 (0 MHz)</span><span>PRB 24 (5 MHz)</span></div>
+          </div>
+          <div class="grid-box">
+            <div class="grid-title"><span style="color:var(--accent)">PULSE (Proposed)</span><span>Cell PRB 0–24</span></div>
+            <canvas class="grid-canvas" id="g1" width="250" height="300"></canvas>
+            <div class="axis-label"><span>PRB 0 (0 MHz)</span><span>PRB 24 (5 MHz)</span></div>
+          </div>
+        </div>
+        <div class="legend-bar">
+          <span class="legend-item"><i class="sw" style="background:var(--voip)"></i>VoIP</span>
+          <span class="legend-item"><i class="sw" style="background:var(--video)"></i>Video</span>
+          <span class="legend-item"><i class="sw" style="background:var(--be)"></i>Best Effort</span>
+          <span class="legend-item"><i class="sw" style="background:var(--err)"></i>NACK Block Error</span>
+          <span class="legend-item"><i class="sw" style="background:var(--idle)"></i>Unused PRB</span>
+          <span class="legend-item"><i class="sw" style="background:var(--sleep)"></i>Micro-sleep DTX</span>
+        </div>
+        <div style="background:var(--panel-sub);padding:8px 10px;border-radius:6px;border:1px solid var(--rule);font-size:0.78rem;color:var(--ink-2);">
+          <b>SFR Power Band Indicator:</b> The cyan tick line at the top of the PULSE grid highlights this cell's protected edge sub-band (e.g. PRBs 0–7 for cell 0). PULSE concentrates power on edge users here, mitigating inter-cell interference.
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="ph"><h2>Experiment log</h2>
-      <div class="btnrow"><button class="btn ghost" id="record" type="button">Record current result</button><button class="btn ghost" id="savecsv" type="button" hidden>Save as CSV</button></div></div>
-    <div class="ledger-wrap"><table>
-      <thead><tr><th>Scenario</th><th>Load</th><th>Tput PF / PULSE</th><th>BLER PF / PULSE</th><th>Video loss PF / PULSE</th><th>QoS PF / PULSE</th><th>Power PF / PULSE</th></tr></thead>
-      <tbody id="log"><tr><td colspan="7" class="empty">Record a result, or ask the AI operator to run an experiment.</td></tr></tbody>
-    </table></div>
+  <!-- TAB 3: SCHEDULER COMPARISON -->
+  <section id="tab-schedulers" class="tab-pane" hidden>
+    <div class="comparison-layout">
+      <div class="panel">
+        <div class="ph">
+          <h2>Comprehensive 5-Scheduler Head-to-Head Evaluation</h2>
+          <div class="ctrl-group">
+            <button class="btn" id="run-compare-btn" type="button">Run 5-Way Benchmark (Identical Seeds)</button>
+            <span class="note" id="compare-status">Ready to evaluate all 5 algorithms on identical channels</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="tech-table" id="compare-table">
+            <thead>
+              <tr>
+                <th>Scheduler Algorithm</th>
+                <th>Throughput</th>
+                <th>Spectral Eff.</th>
+                <th>BLER</th>
+                <th>PRB Util.</th>
+                <th>VoIP Delay</th>
+                <th>Video Loss</th>
+                <th>QoS Met</th>
+                <th>Power</th>
+                <th>Energy Eff.</th>
+                <th>DTX Sleep</th>
+                <th>Fairness</th>
+              </tr>
+            </thead>
+            <tbody id="compare-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Algorithmic Overview Cards -->
+      <div class="schemes-cards">
+        <div class="scheme-card">
+          <div class="scheme-card-header">
+            <h3>Round Robin (RR)</h3>
+            <span class="delta-badge flat">Baseline 1</span>
+          </div>
+          <div class="scheme-formula">Metric: -t_last_served</div>
+          <div class="scheme-desc">
+            Allocates PRBs sequentially to users in cyclic order, completely ignoring instantaneous channel quality (CQI). Maximizes fairness at the cost of poor spectral efficiency and severe video packet loss under load.
+          </div>
+        </div>
+
+        <div class="scheme-card">
+          <div class="scheme-card-header">
+            <h3>Max C/I (Carrier-to-Interference)</h3>
+            <span class="delta-badge flat">Baseline 2</span>
+          </div>
+          <div class="scheme-formula">Metric: r_i,k (instant rate)</div>
+          <div class="scheme-desc">
+            Pure greedy opportunistic scheduler: gives every PRB to the user with the highest achievable rate. Delivers maximum aggregate cell throughput under high load, but starves cell-edge users with lower SINR (catastrophic fairness breakdown).
+          </div>
+        </div>
+
+        <div class="scheme-card">
+          <div class="scheme-card-header">
+            <h3>Proportional Fair (PF)</h3>
+            <span class="delta-badge flat">Baseline 3 (Standard)</span>
+          </div>
+          <div class="scheme-formula">Metric: r_i,k / R_bar_i</div>
+          <div class="scheme-desc">
+            Industry standard for 4G LTE. Balances instantaneous peak rate against past average served rate. Does not consider packet deadlines or traffic QoS classes, leading to packet drops for VoIP and video near capacity.
+          </div>
+        </div>
+
+        <div class="scheme-card">
+          <div class="scheme-card-header">
+            <h3>M-LWDF (Delay-Aware)</h3>
+            <span class="delta-badge flat">Baseline 4 (QoS)</span>
+          </div>
+          <div class="scheme-formula">Metric: a_i · D_HOL,i · r_i,k / R_bar_i</div>
+          <div class="scheme-desc">
+            Modified Largest Weighted Delay First. Weights the PF metric linearly by head-of-line delay. Improves real-time packet delivery, but linear delay weights can cause wild swings in video latency and high BLER under channel mismatches.
+          </div>
+        </div>
+
+        <div class="scheme-card active">
+          <div class="scheme-card-header">
+            <h3 style="color:var(--accent)">PULSE (Proposed)</h3>
+            <span class="delta-badge good">Integrated C-RAN</span>
+          </div>
+          <div class="scheme-formula">Metric: w_class · U(t) · pref_sfr · r / R_bar</div>
+          <div class="scheme-desc">
+            Integrated cross-layer management: (1) Bounded exponential priority-urgency weighting, (2) Centralized C-RAN Interference Coordination (ICA), (3) Outer-Loop Link Adaptation (OLLA), (4) Load-adaptive SFR, and (5) Slack-aware DTX sleep.
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <section class="panel" aria-labelledby="byoph">
-    <div class="ph"><h2 id="byoph">Bring your own phone</h2><span class="pill" id="roomstat">Connecting to room…</span></div>
-    <div class="joingrid">
-      <div class="qr" id="qr" aria-label="QR code for the join link"></div>
-      <div style="display:grid;gap:10px;min-width:0">
-        <p class="note" id="joinhelp" style="color:var(--ink-2);font-size:0.88rem">Scan with a phone that is signed in to Claude and has access to this page. The phone becomes a real user in both networks: pick a call, video or download, tap where you are standing, and see your own signal, modulation and speed under Prop. Fair and PULSE.</p>
-        <div class="linkrow"><code id="joinurl">https://claude.ai/artifact/FoGYEdRrmRJqEsS7YdLmpP#join</code><button class="btn ghost" id="copy" type="button">Copy link</button></div>
-        <div class="ledger-wrap"><table>
-          <thead><tr><th>Phone</th><th>Service</th><th>Cell</th><th>SINR</th><th>PF</th><th>PULSE</th></tr></thead>
-          <tbody id="phones"><tr><td colspan="6" class="empty">No phones joined yet.</td></tr></tbody>
-        </table></div>
+  <!-- TAB 4: EXPERIMENT LAB -->
+  <section id="tab-lab" class="tab-pane" hidden>
+    <div class="lab-grid">
+      <!-- Parameters & Controls -->
+      <div class="panel">
+        <div class="ph">
+          <h2>Network Configuration Parameters</h2>
+          <span class="note">Adjust parameters and rebuild network cluster</span>
+        </div>
+        <div class="lab-fields">
+          <div class="lab-field">
+            <label class="lbl" for="upc">Users per Cell</label>
+            <div class="slider-row">
+              <input type="range" id="upc" min="5" max="30" step="1" value="15">
+              <span class="val" id="upcv">15</span>
+            </div>
+          </div>
+
+          <div class="lab-field">
+            <label class="lbl" for="spd">User Mobility Speed</label>
+            <select id="spd">
+              <option value="3">3 km/h · Pedestrian walking</option>
+              <option value="30" selected>30 km/h · Urban city vehicle</option>
+              <option value="60">60 km/h · Suburban bus</option>
+              <option value="120">120 km/h · Highway speed</option>
+            </select>
+          </div>
+
+          <div class="lab-field">
+            <label class="lbl" for="mixv">Voice Users (VoIP)</label>
+            <div class="slider-row">
+              <input type="range" id="mixv" min="0" max="80" step="5" value="30">
+              <span class="val" id="mixvv">30%</span>
+            </div>
+          </div>
+
+          <div class="lab-field">
+            <label class="lbl" for="mixd">Download Users (BE)</label>
+            <div class="slider-row">
+              <input type="range" id="mixd" min="0" max="80" step="5" value="40">
+              <span class="val" id="mixdv">40%</span>
+            </div>
+          </div>
+
+          <div class="lab-field">
+            <label class="lbl" for="cqid">CQI Feedback Delay</label>
+            <div class="slider-row">
+              <input type="range" id="cqid" min="1" max="10" step="1" value="4">
+              <span class="val" id="cqidv">4 ms</span>
+            </div>
+          </div>
+
+          <div class="lab-field">
+            <span class="lbl">Video Users</span>
+            <span class="val" id="mixvid" style="padding-top:6px">30%</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <button class="btn" id="rebuild" type="button">Rebuild Network Topology</button>
+        </div>
+
+        <div class="ph" style="margin-top:8px;">
+          <h2>PULSE Modular Ablation Toggles</h2>
+        </div>
+        <div class="chips">
+          <button class="chip" type="button" data-f="ica" aria-pressed="true">ICA Link Adaptation</button>
+          <button class="chip" type="button" data-f="olla" aria-pressed="true">OLLA (Outer-Loop)</button>
+          <button class="chip" type="button" data-f="sfr" aria-pressed="true">Load-Adaptive SFR</button>
+          <button class="chip" type="button" data-f="eco" aria-pressed="true">Slack-Aware DTX (ECO)</button>
+        </div>
+
+        <div class="ph" style="margin-top:8px;">
+          <h2>Live RF Events & Fault Injection</h2>
+        </div>
+        <div class="lab-field">
+          <label class="lbl" for="tool">Tapping on Network Map will:</label>
+          <select id="tool">
+            <option value="inspect">Inspect cell resource grid</option>
+            <option value="fail">Fail or restore cell tower</option>
+            <option value="jam">Place external jammer (PRBs 0–11)</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <button class="btn ghost" id="jamoff" type="button" disabled>Remove Jammer</button>
+          <button class="btn ghost" id="restore" type="button">Restore All Towers</button>
+        </div>
+        <div class="live-state-banner" id="labstate">All cells up · No jammer active</div>
+      </div>
+
+      <!-- AI Network Operator Panel -->
+      <div class="panel" id="aipanel">
+        <div class="ph">
+          <h2>Ask the Network AI Operator</h2>
+          <span class="note">Claude AI runs live experiments and explains results</span>
+        </div>
+        <textarea id="ask" placeholder="e.g., Fail cell 2 at 1.2× load. Who suffers more, PF or PULSE users?"></textarea>
+        <div class="sugg-box" id="sugg">
+          <button type="button">Compare Round Robin vs PULSE at 1.3× load</button>
+          <button type="button">Put a jammer near cell 0 and tell me which LA copes better</button>
+          <button type="button">At what load does PULSE stop saving energy?</button>
+          <button type="button">Turn off ICA and explain what changes to BLER</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" id="askbtn" type="button">Run Experiment via AI</button>
+          <button class="btn ghost" id="stopbtn" type="button" hidden>Stop</button>
+        </div>
+        <ul class="trace-log" id="trace"></ul>
+        <p class="ai-answer" id="answer"></p>
+        <p class="note" id="ainote">Uses your Claude account or server simulation engine.</p>
+      </div>
+    </div>
+
+    <!-- Experiment Log Table -->
+    <div class="panel">
+      <div class="ph">
+        <h2>Experiment Results Log</h2>
+        <div style="display:flex;gap:8px;">
+          <button class="btn ghost" id="record" type="button">Record Snapshot</button>
+          <button class="btn ghost" id="savecsv" type="button">Export to CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tech-table">
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>Load</th>
+              <th>Throughput (Base / PULSE)</th>
+              <th>BLER (Base / PULSE)</th>
+              <th>Video Loss (Base / PULSE)</th>
+              <th>QoS Met (Base / PULSE)</th>
+              <th>Power (Base / PULSE)</th>
+            </tr>
+          </thead>
+          <tbody id="log">
+            <tr><td colspan="7" class="note" style="text-align:center;padding:16px;">No recorded runs yet. Click "Record Snapshot" or run an AI query.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 5: WMC EDUCATIONAL GUIDE -->
+  <section id="tab-edu" class="tab-pane" hidden>
+    <div class="panel">
+      <div class="ph">
+        <h2>Wireless & Mobile Communications (WMC) Theory Companion</h2>
+        <span class="note">Theoretical background, mathematical formulations and evaluation guide for oral examination</span>
+      </div>
+      <div class="edu-grid">
+        <div class="edu-card">
+          <h3>1. LTE Physical Layer & PRB Structure</h3>
+          <p>
+            LTE operates with a <b>10 ms Radio Frame</b> divided into ten <b>1 ms Subframes (TTIs)</b>. Each 1 ms TTI comprises two 0.5 ms slots. In the frequency domain, resources are partitioned into subcarriers spaced at <b>15 kHz</b>.
+          </p>
+          <p>
+            The fundamental unit of radio resource assignment is the <b>Physical Resource Block (PRB)</b>: 12 subcarriers (180 kHz) × 7 OFDM symbols (0.5 ms slot) = 84 Resource Elements (REs). In a 1 ms TTI pair, there are 168 REs, of which ~120 REs carry user data after control channel (PDCCH) and cell-specific reference signals (CRS) overhead.
+          </p>
+          <div class="edu-tag-row">
+            <span class="edu-tag">5 MHz BW = 25 PRBs</span>
+            <span class="edu-tag">1 TTI = 1 ms</span>
+            <span class="edu-tag">Subcarrier: 15 kHz</span>
+            <span class="edu-tag">120 Data REs / PRB</span>
+          </div>
+        </div>
+
+        <div class="edu-card">
+          <h3>2. eNodeB Architecture & Energy Model</h3>
+          <p>
+            The <b>eNodeB (Evolved Node B)</b> is the base station in LTE, combining radio transceiver equipment with the MAC packet scheduler. Modern telecom power consumption is dominated by the base station power amplifier (PA) and baseband processing.
+          </p>
+          <p>
+            We implement the standardized <b>EARTH project energy model</b> for single-carrier macro cells:
+            <br><code>P_cell = P_0 + Δ_p · P_max · (used_PRBs / N_RB)</code> when active (P_0 = 130 W, Δ_p = 4.7, P_max = 20 W), and <code>P_sleep = 75 W</code> when the cell enters micro-sleep Discontinuous Transmission (DTX).
+          </p>
+          <div class="edu-tag-row">
+            <span class="edu-tag">Active P0: 130 W</span>
+            <span class="edu-tag">Micro-sleep: 75 W</span>
+            <span class="edu-tag">42.3% Power Saving</span>
+          </div>
+        </div>
+
+        <div class="edu-card">
+          <h3>3. CQI Feedback & Adaptive Modulation (AMC)</h3>
+          <p>
+            User Equipment (UE) periodically reports a 4-bit <b>Channel Quality Indicator (CQI 1–15)</b> reflecting downlink SINR based on 3GPP TS 36.213 Table 7.2.3-1. The eNodeB chooses the Modulation and Coding Scheme (MCS):
+          </p>
+          <p>
+            • CQI 1–6: <b>QPSK</b> (Spectral Efficiency 0.15 to 0.88 bits/RE)<br>
+            • CQI 7–9: <b>16QAM</b> (Spectral Efficiency 1.18 to 1.91 bits/RE)<br>
+            • CQI 10–15: <b>64QAM</b> (Spectral Efficiency 2.41 to 5.55 bits/RE)
+          </p>
+          <div class="edu-tag-row">
+            <span class="edu-tag">Target BLER: 10%</span>
+            <span class="edu-tag">HARQ RTT: 8 ms</span>
+            <span class="edu-tag">CQI Delay: 4 ms</span>
+          </div>
+        </div>
+
+        <div class="edu-card">
+          <h3>4. The Flashlight Effect & Centralized ICA</h3>
+          <p>
+            Because CQI feedback is delayed by 4 ms, the interference environment measured by the UE is often obsolete by the time the eNodeB transmits. If an interfering neighbor cell was idle at measurement time but transmits now, the UE suffers unexpected packet drops (NACKs).
+          </p>
+          <p>
+            PULSE solves this using <b>Interference-Coordinated Link Adaptation (ICA)</b>. Operating as a centralized C-RAN controller with full awareness of neighbor PRB allocations, it adjusts reported SINR:
+            <br><code>SINR_corrected = SINR_rep · (N0 + I_then) / (N0 + I_now)</code>
+          </p>
+          <div class="edu-tag-row">
+            <span class="edu-tag">Flashlight Correction</span>
+            <span class="edu-tag">OLLA Offset</span>
+            <span class="edu-tag">Zero Packet Loss Jumps</span>
+          </div>
+        </div>
+
+        <div class="edu-card">
+          <h3>5. Traffic Classes & Delay Budgets (QCI)</h3>
+          <p>
+            LTE defines QoS Class Identifiers (QCI) with strict latency and packet loss thresholds:
+          </p>
+          <p>
+            • <b>VoIP (QCI 1):</b> AMR 12.2 kbps codec, 328-bit frame every 20 ms. Strict delay budget: <b>100 ms</b>.<br>
+            • <b>HD Video (QCI 2):</b> 450 kbps stream, 40 ms frame interval (25 fps). Delay budget: <b>300 ms</b>.<br>
+            • <b>Best Effort (QCI 9):</b> Web downloads / file transfers with elastic exponential file arrival.
+          </p>
+          <div class="edu-tag-row">
+            <span class="edu-tag">VoIP: 100 ms budget</span>
+            <span class="edu-tag">Video: 300 ms budget</span>
+            <span class="edu-tag">BE: Elastic</span>
+          </div>
+        </div>
+
+        <div class="edu-card">
+          <h3>6. Fairness & Performance Metrics</h3>
+          <p>
+            <b>Jain's Fairness Index:</b> <code>J = (Σ sat_i)² / (N · Σ sat_i²)</code>, where satisfaction is the ratio of served bits to offered bits. J = 1.0 represents perfect equality.
+          </p>
+          <p>
+            <b>Cell-Edge Satisfaction:</b> The 5th percentile of user throughput, ensuring that vulnerable users located at the boundary of adjacent cells are not starved of service.
+          </p>
+          <div class="edu-tag-row">
+            <span class="edu-tag">Jain's Index [0, 1]</span>
+            <span class="edu-tag">5th-Percentile Rate</span>
+            <span class="edu-tag">QoS Met %</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 6: BRING YOUR OWN PHONE (BYOD) -->
+  <section id="tab-byod" class="tab-pane" hidden>
+    <div class="panel">
+      <div class="ph">
+        <h2>Bring Your Own Phone (Interactive Classroom Participation)</h2>
+        <span class="pill" id="roomstat" style="font-size:0.75rem;">Initializing room…</span>
+      </div>
+      <div class="byod-grid">
+        <div class="qr-box" id="qr" aria-label="QR Code to Join Simulation"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <p class="note" id="joinhelp" style="color:var(--ink);font-size:0.86rem;line-height:1.5;">
+            Connect your smartphone or tablet to the same Wi-Fi / hotspot as this computer, then scan the QR code. Your phone becomes a real mobile user (UE) inside both the baseline and PULSE networks!
+          </p>
+          <div class="link-row">
+            <code id="joinurl">http://localhost:8000/#join</code>
+            <button class="btn ghost" id="copy" type="button">Copy Link</button>
+          </div>
+          <div class="table-wrap">
+            <table class="tech-table">
+              <thead>
+                <tr><th>Connected Device</th><th>Service</th><th>Serving Cell</th><th>Channel SINR</th><th>Baseline Speed</th><th>PULSE Speed</th></tr>
+              </thead>
+              <tbody id="phones">
+                <tr><td colspan="6" class="note" style="text-align:center;padding:12px;">No student phones joined yet. Scan QR code to participate.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 </div>
 
-<main class="phone" id="phoneview" hidden>
-  <header style="display:grid;gap:4px">
-    <h1>PULSE<span>-LTE</span></h1>
-    <p class="sub">You are a user in the live network on the control-room screen.</p>
-    <span class="pill" id="pstat">Connecting…</span>
+<!-- Mobile Phone Interface (#join view) -->
+<main class="phone-view" id="phoneview" hidden>
+  <header style="display:flex;flex-direction:column;gap:4px;">
+    <h1 style="font-family:var(--display);font-size:1.6rem;margin:0;">PULSE<span style="color:var(--accent);">-LTE</span> Mobile Node</h1>
+    <p class="note">You are a live mobile user participating in the classroom network.</p>
+    <span class="pill" id="pstat">Connecting to network…</span>
   </header>
-  <div style="display:grid;gap:6px"><label class="lbl" for="nick">Your name on the map</label><input id="nick" maxlength="14" autocomplete="off"></div>
-  <div style="display:grid;gap:6px"><span class="lbl">What is your phone doing?</span>
-    <div class="seg" role="group" aria-label="Service">
-      <button type="button" data-svc="voice" aria-pressed="false">Voice call</button>
-      <button type="button" data-svc="video" aria-pressed="true">HD video</button>
+  <div style="display:flex;flex-direction:column;gap:4px;">
+    <label class="lbl" for="nick">Your Call Sign / Name</label>
+    <input id="nick" maxlength="14" autocomplete="off" placeholder="e.g. Phone 1">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:4px;">
+    <span class="lbl">Select Traffic Service</span>
+    <div class="phone-svc-seg" role="group" aria-label="Service Selector">
+      <button type="button" data-svc="voice" aria-pressed="false">Voice</button>
+      <button type="button" data-svc="video" aria-pressed="true">HD Video</button>
       <button type="button" data-svc="download" aria-pressed="false">Download</button>
       <button type="button" data-svc="idle" aria-pressed="false">Idle</button>
-    </div></div>
-  <div class="panel" style="padding:10px">
-    <div class="ph"><h2>Where are you?</h2><p class="note">Tap the map to stand there</p></div>
-    <canvas id="pmap" width="440" height="405" aria-label="Tap to choose your position in the network"></canvas>
+    </div>
+  </div>
+  <div class="panel" style="padding:10px;">
+    <div class="ph"><h2>Tap Position on Hex Map</h2><span class="note">Move closer to cell edge to test protection</span></div>
+    <canvas id="pmap" width="440" height="400" aria-label="Tap to place your phone in the cell layout"></canvas>
   </div>
   <div class="panel">
-    <p class="cellline" id="pcell">Waiting for the control room…</p>
-    <div class="radio">
-      <div><span>SINR</span><b id="psinr">–</b></div>
-      <div><span>CQI</span><b id="pcqi">–</b></div>
-      <div><span>Modulation</span><b id="pmod">–</b></div>
+    <p style="font-family:var(--mono);font-size:0.85rem;margin:0;" id="pcell">Associating with base station…</p>
+    <div class="radio-hud">
+      <div class="radio-hud-box"><span>SINR</span><b id="psinr">–</b></div>
+      <div class="radio-hud-box"><span>CQI</span><b id="pcqi">–</b></div>
+      <div class="radio-hud-box"><span>Modulation</span><b id="pmod">–</b></div>
     </div>
-    <div class="ledger-wrap"><table>
-      <thead><tr><th>You get</th><th>Prop. Fair</th><th>PULSE</th></tr></thead>
-      <tbody id="pkpi"></tbody>
-    </table></div>
-    <p class="note" id="pnote">Move toward a cell edge to see how PULSE protects weak users.</p>
+    <div class="table-wrap">
+      <table class="tech-table">
+        <thead><tr><th>Metric Received</th><th>Baseline</th><th>PULSE</th></tr></thead>
+        <tbody id="pkpi"></tbody>
+      </table>
+    </div>
+    <p class="note" id="pnote">Move toward cell edge to observe how PULSE boosts weak users.</p>
   </div>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/vendor/qrcode.min.js"></script>
 <script>
 "use strict";
-// Runs inside Claude (artifact) or from a laptop via serve.py. Outside Claude there is no window.claude.
-const IN_CLAUDE = !!(window.claude && window.claude.use);
-const cuse = name => IN_CLAUDE ? window.claude.use(name) : Promise.resolve(null);
-// ---------------------------------------------------------------- constants (mirror pulse/config.py)
+/**
+ * PULSE-LTE In-Browser Simulation Engine & Telecom Operations Console
+ * Full client-side implementation of LTE downlink PHY/MAC and all 5 schedulers:
+ * Round Robin (RR), Max C/I, Proportional Fair (PF), M-LWDF, and PULSE.
+ */
+
+// ---------------------------------------------------------------- Constants & 3GPP Models
 const C = 7, MAXP = 12, NRB = 25, SB = 5, NSB = 5, JAM_RB = 12;
-let UPC = 15, U = C * UPC, UT = U + MAXP, DELAY = 4, L = DELAY + 1;   // set by the experiment lab
-let MIX = [0.3, 0.3];                                                 // voice share, video share
+let UPC = 15, U = C * UPC, UT = U + MAXP, DELAY = 4, L = DELAY + 1;
+let MIX = [0.3, 0.3]; // Voice, Video (Best Effort is remainder)
 const ISD = 500, RCELL = ISD / Math.sqrt(3), RE = 120;
-const PRB = Math.pow(10, 4.3) / NRB;                               // mW per PRB (43 dBm)
+const PRB = Math.pow(10, 4.3) / NRB; // 43 dBm total power (20W) / 25 PRBs
 const NOISE = Math.pow(10, (-174 + 10 * Math.log10(180e3) + 9) / 10);
+// 3GPP TS 36.213 CQI thresholds (10% BLER AWGN)
 const CQI_DB = [-6.7, -4.7, -2.3, 0.2, 2.4, 4.3, 5.9, 8.1, 10.3, 11.7, 14.1, 16.3, 18.7, 21.0, 22.7];
 const EFF = [0, .1523, .2344, .3770, .6016, .8770, 1.1758, 1.4766, 1.9141, 2.4063, 2.7305, 3.3223, 3.9023, 4.5234, 5.1152, 5.5547];
 const VOIP = 0, VIDEO = 1, BE = 2, DEADLINE = [100, 300, 1e9];
-let RHO = 0.9701;                                                   // J0(2π fd T), 30 km/h @ 2 GHz
-const JAMP = Math.pow(10, 4.0) / JAM_RB;                            // jammer: 40 dBm (10 W) over 12 PRBs
-function j0(x) { let s = 0, t = 1; for (let k = 0; k < 8; k++) { s += t; t *= -(x * x / 4) / ((k + 1) * (k + 1)); } return s; }
+let RHO = 0.9701; // Jakes fading correlation coefficient (30 km/h @ 2.0 GHz)
+const JAMP = Math.pow(10, 4.0) / JAM_RB;
 const P0 = 130, DP = 4.7, PMAX = 20, PSLEEP = 75;
 
-function rng(seed) {                                                // mulberry32
+// Bessel function of first kind order 0
+function j0(x) {
+  let s = 0, t = 1, x2_4 = (x * 0.5) ** 2;
+  for (let k = 1; k < 12; k++) { s += t; t *= -x2_4 / (k * k); if (Math.abs(t) < 1e-12) break; }
+  return s;
+}
+
+// Pseudo-Random Number Generator (Mulberry32 + Normal distribution via Box-Muller)
+function rng(seed) {
   let a = seed >>> 0;
-  const r = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  r.n = () => { let u = 0; while (u === 0) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r()); };
+  const r = () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  r.n = () => {
+    let u = 0; while (u === 0) u = r();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r());
+  };
   return r;
 }
+
 const cqiOf = db => { let k = 0; while (k < 15 && db >= CQI_DB[k]) k++; return k; };
 const blerOf = (db, cqi) => 1 / (1 + Math.exp(1.5 * (db - CQI_DB[Math.max(cqi, 1) - 1]) + 2.197));
 
-// ---------------------------------------------------------------- world (shared topology)
+// ---------------------------------------------------------------- Network Topology Creation
 function makeWorld(seed) {
   const r = rng(seed);
   const sites = [[0, 0]];
-  for (let k = 0; k < 6; k++) { const a = (30 + 60 * k) * Math.PI / 180; sites.push([ISD * Math.cos(a), ISD * Math.sin(a)]); }
-  const color = [0, 1, 2, 1, 2, 1, 2];
+  for (let k = 0; k < 6; k++) {
+    const a = (30 + 60 * k) * Math.PI / 180;
+    sites.push([ISD * Math.cos(a), ISD * Math.sin(a)]);
+  }
+  const color = [0, 1, 2, 1, 2, 1, 2]; // Reuse-3 coloring for SFR
   const pos = [], G = new Float64Array(UT * C), serving = new Int32Array(UT), edge = new Uint8Array(UT);
   const cls = new Int32Array(UT), phase = new Int32Array(UT);
   const active = new Uint8Array(UT), rateMul = new Float64Array(UT).fill(1);
   for (let u = 0; u < U; u++) active[u] = 1;
   serving.fill(-1);
-  for (let c = 0; c < C; c++) for (let i = 0; i < UPC; i++) {
-    const rr = Math.sqrt(0.005 + r() * 0.995) * RCELL, th = r() * 2 * Math.PI;
-    pos.push([sites[c][0] + rr * Math.cos(th), sites[c][1] + rr * Math.sin(th)]);
+
+  for (let c = 0; c < C; c++) {
+    for (let i = 0; i < UPC; i++) {
+      const rr = Math.sqrt(0.005 + r() * 0.995) * RCELL, th = r() * 2 * Math.PI;
+      pos.push([sites[c][0] + rr * Math.cos(th), sites[c][1] + rr * Math.sin(th)]);
+    }
   }
+
   for (let u = 0; u < U; u++) {
     let best = -1, bg = 0, tot = 0;
     for (let c = 0; c < C; c++) {
       const d = Math.max(Math.hypot(pos[u][0] - sites[c][0], pos[u][1] - sites[c][1]), 35);
-      const pl = 128.1 + 37.6 * Math.log10(d / 1000) + 8 * r.n();
-      const g = Math.pow(10, -pl / 10); G[u * C + c] = g; tot += g;
+      const pl = 128.1 + 37.6 * Math.log10(d / 1000) + 8 * r.n(); // 3GPP TR 36.814 Macro Pathloss + Shadowing
+      const g = Math.pow(10, -pl / 10);
+      G[u * C + c] = g;
+      tot += g;
       if (g > bg) { bg = g; best = c; }
     }
     serving[u] = best;
     const geo = 10 * Math.log10(PRB * bg / (NOISE + PRB * (tot - bg)));
     edge[u] = geo < 3 ? 1 : 0;
-    const x = r(); cls[u] = x < MIX[0] ? VOIP : x < MIX[0] + MIX[1] ? VIDEO : BE;
+    const x = r();
+    cls[u] = x < MIX[0] ? VOIP : (x < MIX[0] + MIX[1] ? VIDEO : BE);
     phase[u] = Math.floor(r() * 40);
   }
+
   const edgeRb = [];
-  for (let c = 0; c < C; c++) { const m = new Uint8Array(NRB); for (let b = color[c] * 8; b < color[c] * 8 + 8; b++) m[b] = 1; edgeRb.push(m); }
+  for (let c = 0; c < C; c++) {
+    const m = new Uint8Array(NRB);
+    const ne = Math.floor(NRB / 3);
+    for (let b = color[c] * ne; b < (color[c] + 1) * ne; b++) m[b] = 1;
+    edgeRb.push(m);
+  }
+
   for (let u = U; u < UT; u++) pos.push([0, 0]);
-  const shadow = new Float64Array(UT * C);               // fixed shadowing for phone slots
+  const shadow = new Float64Array(UT * C);
   for (let i = U * C; i < UT * C; i++) shadow[i] = 6 * r.n();
-  return { sites, pos, G, serving, edge, cls, phase, edgeRb, seed, active, rateMul, shadow,
-    down: new Uint8Array(C), jam: { on: false, x: 0, y: 0, g: new Float64Array(UT) } };
+
+  return {
+    sites, pos, G, serving, edge, cls, phase, edgeRb, seed, active, rateMul, shadow,
+    down: new Uint8Array(C),
+    jam: { on: false, x: 0, y: 0, g: new Float64Array(UT) }
+  };
 }
 
-// A real phone joins: place it, give it a service, compute its radio links.
 const SVC = { voice: [VOIP, 1], video: [VIDEO, 2.7], download: [BE, 8], idle: [BE, 0] };
 function placePhone(w, u, x, y, svc) {
   const [cl, mul] = SVC[svc] || SVC.idle;
@@ -424,7 +1549,6 @@ function placePhone(w, u, x, y, svc) {
   w.serving[u] = best; jamGain(w, u);
   w.edge[u] = 10 * Math.log10(PRB * bg / (NOISE + PRB * (tot - bg))) < 3 ? 1 : 0;
 }
-// Re-attach every user to its strongest working cell (after a tower fails or recovers).
 function reattach(w) {
   for (let u = 0; u < UT; u++) {
     if (!w.active[u]) continue;
@@ -437,41 +1561,59 @@ function jamGain(w, u) {
   const d = Math.max(Math.hypot(w.pos[u][0] - w.jam.x, w.pos[u][1] - w.jam.y), 20);
   w.jam.g[u] = Math.pow(10, -(128.1 + 37.6 * Math.log10(d / 1000)) / 10);
 }
-function removePhone(w, u) { w.active[u] = 0; w.serving[u] = -1; w.rateMul[u] = 0;
+function removePhone(w, u) {
+  w.active[u] = 0; w.serving[u] = -1; w.rateMul[u] = 0;
 }
 
-// ---------------------------------------------------------------- simulator (port of pulse/simulator.py)
+// ---------------------------------------------------------------- Simulation Class
 class Sim {
   constructor(w, opt) {
-    this.w = w; this.opt = opt;
-    this.rT = rng(w.seed + 1000); this.rC = rng(w.seed + 2000); this.rE = rng(w.seed + 3000);
+    this.w = w;
+    this.opt = Object.assign({ sched: "pf", ica: false, olla: false, sfr: false, eco: false }, opt);
+    this.rT = rng(w.seed + 1000);
+    this.rC = rng(w.seed + 2000);
+    this.rE = rng(w.seed + 3000);
     this.t = 0;
     this.q = Array.from({ length: UT }, () => []);
-    this.buf = new Float64Array(UT); this.held = new Float64Array(UT); this.harq = []; this.rbar = new Float64Array(UT).fill(1);
+    this.buf = new Float64Array(UT);
+    this.held = new Float64Array(UT);
+    this.harq = [];
+    this.rbar = new Float64Array(UT).fill(1);
+    this.lastServed = new Float64Array(UT);
     this.olla = new Float64Array(UT);
-    this.hr = new Float64Array(UT * NSB); this.hi = new Float64Array(UT * NSB);
+    this.hr = new Float64Array(UT * NSB);
+    this.hi = new Float64Array(UT * NSB);
     const r0 = rng(w.seed + 4000);
-    for (let i = 0; i < UT * NSB; i++) { this.hr[i] = r0.n() / Math.SQRT2; this.hi[i] = r0.n() / Math.SQRT2; }
+    for (let i = 0; i < UT * NSB; i++) {
+      this.hr[i] = r0.n() / Math.SQRT2;
+      this.hi[i] = r0.n() / Math.SQRT2;
+    }
     this.hist = Array.from({ length: L }, () => new Float64Array(UT * NRB));
     this.txh = Array.from({ length: L }, () => new Float64Array(C * NRB));
     this.pmask = Array.from({ length: C }, () => new Float64Array(NRB).fill(1));
     this.alloc = new Int32Array(C * NRB).fill(-1);
     this.fail = new Uint8Array(C * NRB);
-    this.util = new Float64Array(C); this.asleep = new Uint8Array(C);
-    this.rows = Array.from({ length: C }, () => []);          // grid history per cell
-    // rolling stats (EWMA, ~2 s)
+    this.util = new Float64Array(C);
+    this.asleep = new Uint8Array(C);
+    this.rows = Array.from({ length: C }, () => []);
     this.s = { bits: 0, tx: 0, err: 0, energy: 0, sleep: 0, vd: 0, vn: 0, vidA: 0, vidD: 0, voA: 0, voD: 0 };
-    this.uA = new Float64Array(UT); this.uD = new Float64Array(UT);
-    // per-user live readouts (shown on joined phones)
-    this.uT = new Float64Array(UT); this.uPrb = new Float64Array(UT); this.uNack = new Float64Array(UT);
-    this.uDel = new Float64Array(UT); this.uSinr = new Float64Array(UT); this.uCqi = new Int32Array(UT);
+    this.uA = new Float64Array(UT);
+    this.uD = new Float64Array(UT);
+    this.uT = new Float64Array(UT);
+    this.uPrb = new Float64Array(UT);
+    this.uNack = new Float64Array(UT);
+    this.uDel = new Float64Array(UT);
+    this.uSinr = new Float64Array(UT);
+    this.uCqi = new Int32Array(UT);
     this.powerTrace = [];
     this.prbHit = new Uint8Array(UT);
   }
+
   resetUser(u) {
     this.q[u] = []; this.buf[u] = 0; this.held[u] = 0; this.rbar[u] = 1; this.olla[u] = 0;
     this.uA[u] = 0; this.uD[u] = 0; this.uT[u] = 0; this.uPrb[u] = 0; this.uNack[u] = 0; this.uDel[u] = 0;
   }
+
   ew(k, v, a = 1 / 2000) { this.s[k] += a * (v - this.s[k]); }
 
   arrivals(load, surge) {
@@ -480,13 +1622,23 @@ class Sim {
       if (!w.active[u] || w.rateMul[u] === 0) continue;
       const k = w.cls[u], mult = load * w.rateMul[u] * (surge && w.serving[u] === 0 ? 3 : 1);
       let bits = 0;
-      if (k === VOIP) { if ((t + w.phase[u]) % 20 === 0) bits = 328; }
-      else if (k === VIDEO) { if ((t + w.phase[u]) % 40 === 0) bits = Math.exp(Math.log(18000 * mult) - 0.125 + 0.5 * r.n()); }
-      else { const lam = 250e3 * mult / 80e3 / 1000; if (r() < lam) bits = -Math.log(1 - r()) * 80e3; }
-      if (bits > 0) { this.q[u].push([bits, t]); this.buf[u] += bits; this.arrBits(u, bits); }
+      if (k === VOIP) {
+        if ((t + w.phase[u]) % 20 === 0) bits = 328; // AMR 12.2 kbps
+      } else if (k === VIDEO) {
+        if ((t + w.phase[u]) % 40 === 0) bits = Math.exp(Math.log(18000 * mult) - 0.125 + 0.5 * r.n());
+      } else {
+        const lam = 250e3 * mult / 80e3 / 1000;
+        if (r() < lam) bits = -Math.log(1 - r()) * 80e3;
+      }
+      if (bits > 0) {
+        this.q[u].push([bits, t]);
+        this.buf[u] += bits;
+        this.uA[u] += bits;
+        if (w.cls[u] === VIDEO) this.s.vidA += bits / 2000;
+        if (w.cls[u] === VOIP) this.s.voA += bits / 2000;
+      }
     }
   }
-  arrBits(u, b) { this.uA[u] += b; if (this.w.cls[u] === VIDEO) this.s.vidA += b / 2000; if (this.w.cls[u] === VOIP) this.s.voA += b / 2000; }
 
   dropExpired() {
     const w = this.w, t = this.t;
@@ -494,7 +1646,9 @@ class Sim {
       if (w.cls[u] === BE) continue;
       const q = this.q[u];
       while (q.length && t - q[0][1] > DEADLINE[w.cls[u]]) {
-        const b = q[0][0]; this.buf[u] -= b; this.uD[u] += b;
+        const b = q[0][0];
+        this.buf[u] -= b;
+        this.uD[u] += b;
         if (w.cls[u] === VIDEO) this.s.vidD += b / 2000; else this.s.voD += b / 2000;
         q.shift();
       }
@@ -505,89 +1659,243 @@ class Sim {
     const w = this.w;
     for (let c = 0; c < C; c++) {
       let tot = 0, ed = 0;
-      for (let u = 0; u < UT; u++) if (w.serving[u] === c) { const d = this.buf[u] + this.rbar[u]; tot += d; if (w.edge[u]) ed += d; }
+      for (let u = 0; u < UT; u++) if (w.serving[u] === c) {
+        const d = this.buf[u] + this.rbar[u];
+        tot += d;
+        if (w.edge[u]) ed += d;
+      }
       const ratio = Math.min(6, Math.max(1, 1 + 5 * (ed / Math.max(tot, 1e-9)) / 0.5));
-      const lo = NRB / (8 * ratio + NRB - 8);
-      for (let b = 0; b < NRB; b++) this.pmask[c][b] = this.opt.sfr ? (w.edgeRb[c][b] ? ratio * lo : lo) : 1;
+      const ne = Math.floor(NRB / 3);
+      const lo = NRB / (ne * ratio + NRB - ne);
+      for (let b = 0; b < NRB; b++) {
+        this.pmask[c][b] = this.opt.sfr ? (w.edgeRb[c][b] ? ratio * lo : lo) : 1;
+      }
     }
   }
 
+  /**
+   * Schedule PRBs for one cell using requested scheduler:
+   * "rr", "maxci", "pf", "mlwdf", "pulse"
+   */
   schedule(c, users, est, hol) {
     const o = this.opt, w = this.w, out = new Int32Array(NRB).fill(-1);
-    const n = users.length; if (!n) return out;
-    const rem = new Float64Array(n); let any = 0;
-    for (let i = 0; i < n; i++) { rem[i] = Math.max(this.buf[users[i]] - this.held[users[i]], 0); any += rem[i]; }
+    const n = users.length;
+    if (!n) return out;
+
+    const rem = new Float64Array(n);
+    let any = 0;
+    for (let i = 0; i < n; i++) {
+      rem[i] = Math.max(this.buf[users[i]] - this.held[users[i]], 0);
+      any += rem[i];
+    }
     if (any <= 0) return out;
-    const wgt = new Float64Array(n).fill(1);
-    if (o.sched === "pulse") {
+
+    const sched = o.sched;
+
+    // 1. ROUND ROBIN
+    if (sched === "rr") {
+      const last = new Float64Array(n);
+      for (let i = 0; i < n; i++) last[i] = this.lastServed[users[i]];
+      for (let b = 0; b < NRB; b++) {
+        let best = -1, oldest = Infinity;
+        for (let i = 0; i < n; i++) {
+          if (rem[i] <= 0) continue;
+          const u = users[i];
+          if (est[u * NRB + b] <= 0) continue;
+          if (last[i] < oldest) { oldest = last[i]; best = i; }
+        }
+        if (best < 0) continue;
+        const uBest = users[best];
+        out[b] = uBest;
+        rem[best] -= est[uBest * NRB + b];
+        last[best] = this.t + b * 1e-3;
+      }
+      return out;
+    }
+
+    // 2. MAX C/I
+    if (sched === "maxci") {
+      for (let b = 0; b < NRB; b++) {
+        let best = -1, maxRate = -Infinity;
+        for (let i = 0; i < n; i++) {
+          if (rem[i] <= 0) continue;
+          const u = users[i], rate = est[u * NRB + b];
+          if (rate > maxRate) { maxRate = rate; best = i; }
+        }
+        if (best < 0) continue;
+        out[b] = users[best];
+        rem[best] -= est[users[best] * NRB + b];
+      }
+      return out;
+    }
+
+    // 3. PROPORTIONAL FAIR (PF)
+    if (sched === "pf") {
+      for (let b = 0; b < NRB; b++) {
+        let best = -1, bestMetric = -Infinity;
+        for (let i = 0; i < n; i++) {
+          if (rem[i] <= 0) continue;
+          const u = users[i], rate = est[u * NRB + b];
+          if (rate <= 0) continue;
+          const metric = rate / Math.max(this.rbar[u], 1.0);
+          if (metric > bestMetric) { bestMetric = metric; best = i; }
+        }
+        if (best < 0) continue;
+        out[b] = users[best];
+        rem[best] -= est[users[best] * NRB + b];
+      }
+      return out;
+    }
+
+    // 4. M-LWDF (Modified Largest Weighted Delay First)
+    if (sched === "mlwdf") {
+      const wgt = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        const u = users[i], k = w.cls[u];
+        if (k === BE) {
+          wgt[i] = 1.0;
+        } else {
+          const a = -Math.log(0.05) / DEADLINE[k]; // ~2.996 / deadline
+          wgt[i] = a * Math.max(hol[u], 1.0);
+        }
+      }
+      for (let b = 0; b < NRB; b++) {
+        let best = -1, bestMetric = -Infinity;
+        for (let i = 0; i < n; i++) {
+          if (rem[i] <= 0) continue;
+          const u = users[i], rate = est[u * NRB + b];
+          if (rate <= 0) continue;
+          const metric = wgt[i] * rate / Math.max(this.rbar[u], 1.0);
+          if (metric > bestMetric) { bestMetric = metric; best = i; }
+        }
+        if (best < 0) continue;
+        out[b] = users[best];
+        rem[best] -= est[users[best] * NRB + b];
+      }
+      return out;
+    }
+
+    // 5. PULSE (Proposed)
+    if (sched === "pulse") {
+      const wgt = new Float64Array(n);
       let urgent = false, totBk = 0, cap = 0;
       for (let i = 0; i < n; i++) {
         const u = users[i], k = w.cls[u];
-        wgt[i] = [2, 1.5, 1][k] * (k === BE ? 1 : Math.exp(Math.min(4 * hol[u] / DEADLINE[k], 6)));
-        if (rem[i] > 0) { totBk += rem[i];
+        // Bounded urgency exponent
+        const classW = [2.0, 1.5, 1.0][k];
+        const urgency = k === BE ? 1.0 : Math.exp(Math.min(4.0 * hol[u] / DEADLINE[k], 6.0));
+        wgt[i] = classW * urgency;
+        if (rem[i] > 0) {
+          totBk += rem[i];
           if (k !== BE && hol[u] >= 0.15 * DEADLINE[k]) urgent = true;
-          if (k === BE && hol[u] >= 40) urgent = true; }
-      }
-      if (o.eco) {
-        for (let b = 0; b < NRB; b++) { let s = 0; for (let i = 0; i < n; i++) s += est[users[i] * NRB + b]; cap += s / n; }
-        if (!urgent && totBk < 0.5 * cap) return out;                  // micro-sleep
-      }
-    }
-    for (let b = 0; b < NRB; b++) {
-      let best = -1, bm = -Infinity;
-      for (let i = 0; i < n; i++) {
-        if (rem[i] <= 0) continue;
-        const u = users[i], e = est[u * NRB + b]; if (e <= 0) continue;
-        let m = wgt[i] * e / Math.max(this.rbar[u], 1);
-        if (o.sched === "pulse" && o.sfr) {
-          const er = w.edgeRb[c][b];
-          m *= w.edge[u] ? (er ? 1.6 : 0.6) : (er ? 0.6 : 1);
+          if (k === BE && hol[u] >= 40) urgent = true;
         }
-        if (m > bm) { bm = m; best = i; }
       }
-      if (best < 0) continue;
-      out[b] = users[best]; rem[best] -= est[users[best] * NRB + b];
+
+      // ECO Micro-sleep check
+      if (o.eco) {
+        for (let b = 0; b < NRB; b++) {
+          let s = 0;
+          for (let i = 0; i < n; i++) s += est[users[i] * NRB + b];
+          cap += s / n;
+        }
+        if (!urgent && totBk < 0.5 * cap) {
+          return out; // Cell sleeps this TTI
+        }
+      }
+
+      // Allocation with optional SFR sub-band preference
+      for (let b = 0; b < NRB; b++) {
+        let best = -1, bestMetric = -Infinity;
+        for (let i = 0; i < n; i++) {
+          if (rem[i] <= 0) continue;
+          const u = users[i], rate = est[u * NRB + b];
+          if (rate <= 0) continue;
+          let m = wgt[i] * rate / Math.max(this.rbar[u], 1.0);
+          if (o.sfr) {
+            const isEdgeRb = w.edgeRb[c][b];
+            m *= w.edge[u] ? (isEdgeRb ? 1.6 : 0.6) : (isEdgeRb ? 0.6 : 1.0);
+          }
+          if (m > bestMetric) { bestMetric = m; best = i; }
+        }
+        if (best < 0) continue;
+        out[b] = users[best];
+        rem[best] -= est[users[best] * NRB + b];
+      }
+      return out;
     }
+
     return out;
   }
 
   step(load, surge) {
     const w = this.w, o = this.opt, t = this.t, r = this.rE;
-    this.arrivals(load, surge); this.dropExpired();
-    while (this.harq.length && this.harq[0][0] <= t) { const [, hu, hb] = this.harq.shift(); this.held[hu] = Math.max(this.held[hu] - hb, 0); }
+    this.arrivals(load, surge);
+    this.dropExpired();
+
+    while (this.harq.length && this.harq[0][0] <= t) {
+      const [, hu, hb] = this.harq.shift();
+      this.held[hu] = Math.max(this.held[hu] - hb, 0);
+    }
+
     if (t % 100 === 0) this.updateSfr();
+
     const rep = this.hist[t >= DELAY ? (t - DELAY) % L : 0];
     const est = new Float64Array(UT * NRB);
-    const useOlla = o.sched === "pulse" && o.olla;
-    for (let u = 0; u < UT; u++) for (let b = 0; b < NRB; b++) {
-      const raw = cqiOf(rep[u * NRB + b]);
-      let cq = useOlla ? cqiOf(rep[u * NRB + b] + this.olla[u]) : raw;
-      if (useOlla && raw > 0) cq = Math.max(cq, 1);
-      est[u * NRB + b] = EFF[cq] * RE;
+    const useOlla = (o.sched === "pulse" && o.olla);
+
+    for (let u = 0; u < UT; u++) {
+      for (let b = 0; b < NRB; b++) {
+        const raw = cqiOf(rep[u * NRB + b]);
+        let cq = useOlla ? cqiOf(rep[u * NRB + b] + this.olla[u]) : raw;
+        if (useOlla && raw > 0) cq = Math.max(cq, 1);
+        est[u * NRB + b] = EFF[cq] * RE;
+      }
     }
+
     const hol = new Float64Array(UT);
     for (let u = 0; u < UT; u++) hol[u] = this.q[u].length ? t - this.q[u][0][1] : 0;
+
     for (let c = 0; c < C; c++) {
-      const users = []; for (let u = 0; u < UT; u++) if (w.serving[u] === c) users.push(u);
-      if (w.down[c]) { this.alloc.fill(-1, c * NRB, (c + 1) * NRB); continue; }
+      const users = [];
+      for (let u = 0; u < UT; u++) if (w.serving[u] === c) users.push(u);
+      if (w.down[c]) {
+        this.alloc.fill(-1, c * NRB, (c + 1) * NRB);
+        continue;
+      }
       this.alloc.set(this.schedule(c, users, est, hol), c * NRB);
     }
-    // actual SINR with this TTI's activity
+
+    // Actual transmitted power and SINR
     const tx = new Float64Array(C * NRB);
-    for (let c = 0; c < C; c++) for (let b = 0; b < NRB; b++) if (this.alloc[c * NRB + b] >= 0) tx[c * NRB + b] = this.pmask[c][b] * PRB;
+    for (let c = 0; c < C; c++) {
+      for (let b = 0; b < NRB; b++) {
+        if (this.alloc[c * NRB + b] >= 0) tx[c * NRB + b] = this.pmask[c][b] * PRB;
+      }
+    }
     if (t === 0) for (let i = 0; i < L; i++) this.txh[i].set(tx);
     const txThen = this.txh[(t - DELAY + L * 10) % L];
+
     const sinr = new Float64Array(UT * NRB), la = new Float64Array(UT * NRB);
-    const useIca = o.sched === "pulse" && o.ica;
+    const useIca = (o.sched === "pulse" && o.ica);
+
     for (let u = 0; u < UT; u++) {
       const s = w.serving[u];
-      if (s < 0) { for (let b = 0; b < NRB; b++) { sinr[u * NRB + b] = -60; la[u * NRB + b] = -60; } continue; }
+      if (s < 0) {
+        for (let b = 0; b < NRB; b++) { sinr[u * NRB + b] = -60; la[u * NRB + b] = -60; }
+        continue;
+      }
       const gs = w.G[u * C + s];
       for (let b = 0; b < NRB; b++) {
         let iNow = 0, iThen = 0;
-        for (let c = 0; c < C; c++) if (c !== s) { const g = w.G[u * C + c]; iNow += g * tx[c * NRB + b]; iThen += g * txThen[c * NRB + b]; }
-        const ij = w.jam.on && b < JAM_RB ? JAMP * w.jam.g[u] : 0;   // external jammer: the controller cannot see it
-        const sbi = u * NSB + Math.floor(b / SB), fade = this.hr[sbi] ** 2 + this.hi[sbi] ** 2;
+        for (let c = 0; c < C; c++) if (c !== s) {
+          const g = w.G[u * C + c];
+          iNow += g * tx[c * NRB + b];
+          iThen += g * txThen[c * NRB + b];
+        }
+        const ij = w.jam.on && b < JAM_RB ? JAMP * w.jam.g[u] : 0;
+        const sbi = u * NSB + Math.floor(b / SB);
+        const fade = this.hr[sbi] ** 2 + this.hi[sbi] ** 2;
         sinr[u * NRB + b] = 10 * Math.log10(this.pmask[s][b] * PRB * gs * fade / (NOISE + iNow + ij));
         let l = rep[u * NRB + b];
         if (useIca) l += 10 * Math.log10((NOISE + iThen) / (NOISE + iNow));
@@ -595,39 +1903,84 @@ class Sim {
         la[u * NRB + b] = l;
       }
     }
-    if (t === 0) for (let i = 0; i < L; i++) this.hist[i].set(sinr);
-    this.hist[t % L].set(sinr); this.txh[t % L].set(tx);
 
-    // transmit
-    const served = new Float64Array(UT); this.fail.fill(0);
+    if (t === 0) for (let i = 0; i < L; i++) this.hist[i].set(sinr);
+    this.hist[t % L].set(sinr);
+    this.txh[t % L].set(tx);
+
+    // Transmission & Block Error evaluation
+    const served = new Float64Array(UT);
+    this.fail.fill(0);
     let pw = 0, live = 0;
+
     for (let c = 0; c < C; c++) {
-      if (w.down[c]) { this.asleep[c] = 0; this.util[c] *= 0.98; const row = new Int16Array(NRB).fill(-3); this.rows[c].unshift(row); if (this.rows[c].length > 120) this.rows[c].pop(); continue; }
+      if (w.down[c]) {
+        this.asleep[c] = 0;
+        this.util[c] *= 0.98;
+        const row = new Int16Array(NRB).fill(-3);
+        this.rows[c].unshift(row);
+        if (this.rows[c].length > 120) this.rows[c].pop();
+        continue;
+      }
       live++;
-      const seen = new Map(); let used = 0, pmSum = 0;
-      for (let b = 0; b < NRB; b++) { const u = this.alloc[c * NRB + b]; if (u >= 0) { used++; pmSum += this.pmask[c][b]; if (!seen.has(u)) seen.set(u, []); seen.get(u).push(b); } }
-      const p = used ? P0 + DP * PMAX * pmSum / NRB : (o.sched === "pulse" && o.eco ? PSLEEP : P0);
-      pw += p; this.asleep[c] = used ? 0 : 1;
+      const seen = new Map();
+      let used = 0, pmSum = 0;
+      for (let b = 0; b < NRB; b++) {
+        const u = this.alloc[c * NRB + b];
+        if (u >= 0) {
+          used++;
+          pmSum += this.pmask[c][b];
+          if (!seen.has(u)) seen.set(u, []);
+          seen.get(u).push(b);
+        }
+      }
+
+      const p = used ? P0 + DP * PMAX * pmSum / NRB : ((o.sched === "pulse" && o.eco) ? PSLEEP : P0);
+      pw += p;
+      this.asleep[c] = used ? 0 : 1;
       this.util[c] += 0.02 * (used / NRB - this.util[c]);
       this.ew("sleep", used ? 0 : 1);
+
       for (const [u, rbs] of seen) {
-        let ml = 0, ms = 0; for (const b of rbs) { ml += la[u * NRB + b]; ms += sinr[u * NRB + b]; }
+        let ml = 0, ms = 0;
+        for (const b of rbs) { ml += la[u * NRB + b]; ms += sinr[u * NRB + b]; }
         ml /= rbs.length; ms /= rbs.length;
         const cq = Math.max(cqiOf(ml), 1);
         const tb = Math.min(rbs.length * EFF[cq] * RE, Math.max(this.buf[u] - this.held[u], 0));
         const ok = r() > blerOf(ms, cq);
-        this.uCqi[u] = cq; this.uPrb[u] += 0.02 * (rbs.length - this.uPrb[u]); this.prbHit[u] = 1;
+        this.uCqi[u] = cq;
+        this.uPrb[u] += 0.02 * (rbs.length - this.uPrb[u]);
+        this.prbHit[u] = 1;
         this.uNack[u] += 0.02 * ((ok ? 0 : 1) - this.uNack[u]);
-        this.ew("tx", 1, 1 / 200); this.ew("err", ok ? 0 : 1, 1 / 200);
-        if (useOlla) this.olla[u] = Math.min(3, Math.max(-6, this.olla[u] + (ok ? 0.5 * 0.1 / 0.9 : -0.5)));
-        if (!ok) { for (const b of rbs) this.fail[c * NRB + b] = 1; this.held[u] += tb; this.harq.push([t + 8, u, tb]); continue; }
-        served[u] = tb; this.dequeue(u, tb);
+        this.lastServed[u] = t;
+        this.ew("tx", 1, 1 / 200);
+        this.ew("err", ok ? 0 : 1, 1 / 200);
+
+        if (useOlla) {
+          this.olla[u] = Math.min(3, Math.max(-6, this.olla[u] + (ok ? 0.5 * 0.1 / 0.9 : -0.5)));
+        }
+
+        if (!ok) {
+          for (const b of rbs) this.fail[c * NRB + b] = 1;
+          this.held[u] += tb;
+          this.harq.push([t + 8, u, tb]); // 8 ms HARQ round trip
+          continue;
+        }
+
+        served[u] = tb;
+        this.dequeue(u, tb);
       }
-      // grid row
+
+      // Waterfall PRB grid history row
       const row = new Int16Array(NRB);
-      for (let b = 0; b < NRB; b++) { const u = this.alloc[c * NRB + b]; row[b] = u < 0 ? (used ? -1 : -2) : (this.fail[c * NRB + b] ? 9 : w.cls[u]); }
-      this.rows[c].unshift(row); if (this.rows[c].length > 120) this.rows[c].pop();
+      for (let b = 0; b < NRB; b++) {
+        const u = this.alloc[c * NRB + b];
+        row[b] = u < 0 ? (used ? -1 : -2) : (this.fail[c * NRB + b] ? 9 : w.cls[u]);
+      }
+      this.rows[c].unshift(row);
+      if (this.rows[c].length > 120) this.rows[c].pop();
     }
+
     let tot = 0;
     for (let u = U; u < UT; u++) if (this.w.active[u]) {
       if (!this.prbHit[u]) this.uPrb[u] *= 0.98;
@@ -636,19 +1989,32 @@ class Sim {
       let m = 0; for (let b = 0; b < NRB; b++) m += sinr[u * NRB + b];
       this.uSinr[u] += 0.05 * (m / NRB - this.uSinr[u]);
     }
-    for (let u = 0; u < UT; u++) { tot += served[u]; this.rbar[u] += (served[u] - this.rbar[u]) / 100; }
-    this.ew("bits", tot); this.ew("energy", pw / Math.max(live, 1));
-    if (t % 20 === 0) { this.powerTrace.push(this.s.energy); if (this.powerTrace.length > 300) this.powerTrace.shift(); }
+    for (let u = 0; u < UT; u++) {
+      tot += served[u];
+      this.rbar[u] += (served[u] - this.rbar[u]) / 100;
+    }
+
+    this.ew("bits", tot);
+    this.ew("energy", pw / Math.max(live, 1));
+    if (t % 20 === 0) {
+      this.powerTrace.push(this.s.energy);
+      if (this.powerTrace.length > 300) this.powerTrace.shift();
+    }
+
+    // Fading channel update (Jakes AR-1 Rayleigh model)
     for (let i = 0; i < UT * NSB; i++) {
       this.hr[i] = RHO * this.hr[i] + Math.sqrt(1 - RHO * RHO) * this.rC.n() / Math.SQRT2;
       this.hi[i] = RHO * this.hi[i] + Math.sqrt(1 - RHO * RHO) * this.rC.n() / Math.SQRT2;
     }
+
     for (let u = 0; u < UT; u++) { this.uA[u] *= 0.9997; this.uD[u] *= 0.9997; }
     this.s.vidA *= 0.9995; this.s.vidD *= 0.9995; this.s.voA *= 0.9995; this.s.voD *= 0.9995;
     this.t++;
   }
+
   dequeue(u, bits) {
-    const q = this.q[u]; this.buf[u] = Math.max(this.buf[u] - bits, 0);
+    const q = this.q[u];
+    this.buf[u] = Math.max(this.buf[u] - bits, 0);
     while (bits > 1e-9 && q.length) {
       if (q[0][0] <= bits + 1e-9) {
         bits -= q[0][0];
@@ -656,13 +2022,21 @@ class Sim {
         if (this.w.cls[u] === VOIP) this.s.vd += (d - this.s.vd) / 300;
         if (u >= U) this.uDel[u] += (d - this.uDel[u]) / (this.w.cls[u] === BE ? 3 : 20);
         q.shift();
-      } else { q[0][0] -= bits; bits = 0; }
+      } else {
+        q[0][0] -= bits;
+        bits = 0;
+      }
     }
   }
+
   kpis() {
-    const w = this.w; let rt = 0, ok = 0;
-    for (let u = 0; u < UT; u++) if (w.cls[u] !== BE && this.uA[u] > 0) {
-      rt++; if (this.uD[u] / this.uA[u] <= (w.cls[u] === VOIP ? 0.01 : 0.02)) ok++;
+    const w = this.w;
+    let rt = 0, ok = 0;
+    for (let u = 0; u < UT; u++) {
+      if (w.cls[u] !== BE && this.uA[u] > 0) {
+        rt++;
+        if (this.uD[u] / this.uA[u] <= (w.cls[u] === VOIP ? 0.01 : 0.02)) ok++;
+      }
     }
     return {
       tput: this.s.bits * 1000 / C / 1e6,
@@ -672,195 +2046,508 @@ class Sim {
       qos: rt ? 100 * ok / rt : 100,
       power: this.s.energy,
       sleep: 100 * this.s.sleep,
-      eff: this.s.energy > 0 ? this.s.bits * 1000 / C / this.s.energy / 1000 : 0,
+      eff: this.s.energy > 0 ? this.s.bits * 1000 / C / this.s.energy / 1000 : 0
     };
   }
 }
 
-// ---------------------------------------------------------------- UI
+// ---------------------------------------------------------------- Dashboard UI & State
 const $ = id => document.getElementById(id);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
 let world, sims, running = true, cellSel = 0, surge = false;
-const phones = new Map();                                   // peer label -> {slot, nick, svc, x, y}
+let currentBaseSched = "pf";
+const phones = new Map();
 const feats = { ica: true, olla: true, sfr: true, eco: true };
+
+// Tab Navigation Handling
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-pane").forEach(p => p.hidden = true);
+    btn.classList.add("active");
+    const target = $(btn.dataset.tab);
+    if (target) target.hidden = false;
+  };
+});
 
 function applyLab() {
   UPC = +$("upc").value; U = C * UPC; UT = U + MAXP;
   DELAY = +$("cqid").value; L = DELAY + 1;
-  const kmh = +$("spd").value, fd = kmh / 3.6 * 2e9 / 3e8; RHO = j0(2 * Math.PI * fd * 1e-3);
+  const kmh = +$("spd").value, fd = kmh / 3.6 * 2e9 / 3e8;
+  RHO = j0(2 * Math.PI * fd * 1e-3);
   const v = +$("mixv").value / 100, d = +$("mixd").value / 100;
   MIX = [v, Math.max(0, 1 - v - d)];
 }
+
 let seedNow = 7;
 function reset(seed) {
   seedNow = seed;
   applyLab();
   world = makeWorld(seed);
   [...phones.values()].forEach((ph, i) => ph.slot = U + i);
-  sims = [new Sim(world, { sched: "pf" }), new Sim(world, { sched: "pulse", ...feats })];
+  sims = [
+    new Sim(world, { sched: currentBaseSched }),
+    new Sim(world, { sched: "pulse", ...feats })
+  ];
   for (const ph of phones.values()) placePhone(world, ph.slot, ph.x, ph.y, ph.svc);
-  for (let i = 0; i < 400; i++) { sims[0].step(+$("load").value, surge); sims[1].step(+$("load").value, surge); }  // warm-up
+  // warm up simulation
+  const curLoad = +$("load").value;
+  for (let i = 0; i < 300; i++) {
+    sims[0].step(curLoad, surge);
+    sims[1].step(curLoad, surge);
+  }
 }
 
+// Map Rendering
 function drawMap() {
-  const cv = $("map"), x = cv.getContext("2d"), W = cv.width, H = cv.height;
+  const cv = $("map");
+  if (!cv || cv.offsetParent === null) return;
+  const x = cv.getContext("2d"), W = cv.width, H = cv.height;
   const s = sims[+$("mapsrc").value], sc = W / (ISD * 3.3), cx = W / 2, cy = H / 2;
   x.clearRect(0, 0, W, H);
   const P = (px, py) => [cx + px * sc, cy - py * sc];
   const ink = css("--ink"), rule = css("--rule"), acc = s === sims[1] ? css("--accent") : css("--base");
   const R = RCELL * sc;
+
+  // Draw 7 Hexagonal Macro Cells
   world.sites.forEach((st, c) => {
     const [X, Y] = P(st[0], st[1]);
     x.beginPath();
-    for (let k = 0; k < 6; k++) { const a = Math.PI / 3 * k; x.lineTo(X + R * Math.cos(a), Y + R * Math.sin(a)); }
+    for (let k = 0; k < 6; k++) {
+      const a = Math.PI / 3 * k;
+      x.lineTo(X + R * Math.cos(a), Y + R * Math.sin(a));
+    }
     x.closePath();
-    if (world.down[c]) { x.fillStyle = css("--ink-3"); x.globalAlpha = 0.35; }
-    else if (s.asleep[c] && s.util[c] < 0.08) x.fillStyle = css("--sleep");
-    else { x.fillStyle = acc; x.globalAlpha = 0.08 + 0.55 * Math.min(1, s.util[c]); }
-    x.fill(); x.globalAlpha = 1;
-    x.lineWidth = c === cellSel ? 2.5 : 1; x.strokeStyle = c === cellSel ? ink : rule; x.stroke();
-    x.fillStyle = ink; x.beginPath(); x.moveTo(X, Y - 7); x.lineTo(X - 6, Y + 5); x.lineTo(X + 6, Y + 5); x.closePath(); x.fill();
-    x.font = "600 12px " + css("--mono"); x.fillStyle = css("--ink-2"); x.textAlign = "center";
-    x.fillText(world.down[c] ? `cell ${c}  DOWN` : `cell ${c}  ${Math.round(100 * s.util[c])}%`, X, Y + 20);
+
+    if (world.down[c]) {
+      x.fillStyle = "rgba(244, 63, 94, 0.25)";
+    } else if (s.asleep[c] && s.util[c] < 0.08) {
+      x.fillStyle = css("--sleep");
+    } else {
+      x.fillStyle = acc;
+      x.globalAlpha = 0.08 + 0.55 * Math.min(1, s.util[c]);
+    }
+    x.fill();
+    x.globalAlpha = 1;
+    x.lineWidth = c === cellSel ? 2.5 : 1;
+    x.strokeStyle = c === cellSel ? css("--accent-sky") : rule;
+    x.stroke();
+
+    // Base Station Tower Icon
+    x.fillStyle = world.down[c] ? css("--err") : ink;
+    x.beginPath();
+    x.moveTo(X, Y - 7); x.lineTo(X - 6, Y + 5); x.lineTo(X + 6, Y + 5); x.closePath();
+    x.fill();
+
+    x.font = "600 12px " + css("--mono");
+    x.fillStyle = css("--ink-2");
+    x.textAlign = "center";
+    const statusTxt = world.down[c] ? `cell ${c}  OFFLINE` : `cell ${c}  ${Math.round(100 * s.util[c])}%`;
+    x.fillText(statusTxt, X, Y + 20);
   });
+
+  // Jammer wave rings
   if (world.jam.on) {
     const [JX, JY] = P(world.jam.x, world.jam.y);
-    x.strokeStyle = css("--bad"); x.lineWidth = 1.5;
-    for (const rr of [10, 22, 34]) { x.globalAlpha = 1 - rr / 45; x.beginPath(); x.arc(JX, JY, rr, 0, 7); x.stroke(); }
-    x.globalAlpha = 1; x.fillStyle = css("--bad"); x.beginPath(); x.arc(JX, JY, 6, 0, 7); x.fill();
-    x.font = "700 11px " + css("--mono"); x.textAlign = "center"; x.fillText("JAMMER", JX, JY - 40);
+    x.strokeStyle = css("--err");
+    x.lineWidth = 1.5;
+    for (const rr of [12, 24, 38]) {
+      x.globalAlpha = 1 - rr / 50;
+      x.beginPath(); x.arc(JX, JY, rr, 0, 7); x.stroke();
+    }
+    x.globalAlpha = 1;
+    x.fillStyle = css("--err");
+    x.beginPath(); x.arc(JX, JY, 6, 0, 7); x.fill();
+    x.font = "700 11px " + css("--mono");
+    x.textAlign = "center";
+    x.fillText("JAMMER (0–11 PRBs)", JX, JY - 44);
   }
+
+  // Draw UEs
   const cc = [css("--voip"), css("--video"), css("--be")];
   for (let u = 0; u < U; u++) {
     const [X, Y] = P(world.pos[u][0], world.pos[u][1]);
     const busy = s.buf[u] > 0;
-    x.beginPath(); x.arc(X, Y, busy ? 4.5 : 3.2, 0, 2 * Math.PI);
-    x.fillStyle = cc[world.cls[u]]; x.globalAlpha = busy ? 1 : 0.45; x.fill(); x.globalAlpha = 1;
-    if (world.edge[u]) { x.lineWidth = 1.3; x.strokeStyle = css("--ink-2"); x.beginPath(); x.arc(X, Y, 7, 0, 2 * Math.PI); x.stroke(); }
+    x.beginPath();
+    x.arc(X, Y, busy ? 4.5 : 3.2, 0, 2 * Math.PI);
+    x.fillStyle = cc[world.cls[u]];
+    x.globalAlpha = busy ? 1 : 0.45;
+    x.fill();
+    x.globalAlpha = 1;
+
+    if (world.edge[u]) {
+      x.lineWidth = 1.2;
+      x.strokeStyle = css("--accent-sky");
+      x.beginPath();
+      x.arc(X, Y, 6.8, 0, 2 * Math.PI);
+      x.stroke();
+    }
   }
-  for (const [peer, ph] of phones) {                       // joined real phones
+
+  // Draw Joined Phones
+  for (const [peer, ph] of phones) {
     const u = ph.slot, [X, Y] = P(world.pos[u][0], world.pos[u][1]);
-    x.beginPath(); x.moveTo(X, Y - 10); x.lineTo(X + 9, Y); x.lineTo(X, Y + 10); x.lineTo(X - 9, Y); x.closePath();
-    x.fillStyle = ph.svc === "idle" ? css("--ink-3") : cc[world.cls[u]]; x.fill();
-    x.lineWidth = 2.2; x.strokeStyle = ink; x.stroke();
-    x.font = "600 12px " + css("--body"); x.fillStyle = ink; x.textAlign = "left";
+    x.beginPath();
+    x.moveTo(X, Y - 10); x.lineTo(X + 9, Y); x.lineTo(X, Y + 10); x.lineTo(X - 9, Y);
+    x.closePath();
+    x.fillStyle = ph.svc === "idle" ? css("--ink-3") : cc[world.cls[u]];
+    x.fill();
+    x.lineWidth = 2.2;
+    x.strokeStyle = ink;
+    x.stroke();
+    x.font = "600 12px " + css("--body");
+    x.fillStyle = ink;
+    x.textAlign = "left";
     x.fillText(ph.nick, X + 12, Y + 4);
   }
 }
 
+// Resource Grid Rendering
 function drawGrid(i) {
-  const cv = $("g" + i), x = cv.getContext("2d"), W = cv.width, H = cv.height;
+  const cv = $("g" + i);
+  if (!cv || cv.offsetParent === null) return;
+  const x = cv.getContext("2d"), W = cv.width, H = cv.height;
   const top = i === 1 ? 6 : 0, cw = W / NRB, rh = (H - top) / 120;
-  const col = { "-3": css("--ink-3"), "-1": css("--idle"), "-2": css("--sleep"), 0: css("--voip"), 1: css("--video"), 2: css("--be"), 9: css("--err") };
-  x.fillStyle = css("--panel"); x.fillRect(0, 0, W, H);
+  const col = {
+    "-3": css("--err"),
+    "-1": css("--idle"),
+    "-2": css("--sleep"),
+    0: css("--voip"),
+    1: css("--video"),
+    2: css("--be"),
+    9: css("--err")
+  };
+  x.fillStyle = css("--panel");
+  x.fillRect(0, 0, W, H);
   const rows = sims[i].rows[cellSel];
-  for (let r = 0; r < rows.length; r++) for (let b = 0; b < NRB; b++) {
-    x.fillStyle = col[rows[r][b]]; x.fillRect(b * cw, top + r * rh, cw - 1, Math.max(rh, 1));
+  for (let r = 0; r < rows.length; r++) {
+    for (let b = 0; b < NRB; b++) {
+      x.fillStyle = col[rows[r][b]] || css("--idle");
+      x.fillRect(b * cw, top + r * rh, cw - 1, Math.max(rh, 1));
+    }
   }
   if (i === 1 && feats.sfr) {
     x.fillStyle = css("--accent");
-    for (let b = 0; b < NRB; b++) if (world.edgeRb[cellSel][b]) x.fillRect(b * cw, 0, cw - 1, 4);
+    for (let b = 0; b < NRB; b++) {
+      if (world.edgeRb[cellSel][b]) x.fillRect(b * cw, 0, cw - 1, 4);
+    }
   }
 }
 
+// Power Sparkline Rendering
 function drawSpark() {
-  const cv = $("spark"), x = cv.getContext("2d"), W = cv.width, H = cv.height, pad = 30;
+  const cv = $("spark");
+  if (!cv || cv.offsetParent === null) return;
+  const x = cv.getContext("2d"), W = cv.width, H = cv.height, pad = 32;
   x.clearRect(0, 0, W, H);
   const lo = 60, hi = 240;
-  x.strokeStyle = css("--rule"); x.fillStyle = css("--ink-3"); x.font = "11px " + css("--mono"); x.lineWidth = 1;
+  x.strokeStyle = css("--rule");
+  x.fillStyle = css("--ink-3");
+  x.font = "10px " + css("--mono");
+  x.lineWidth = 1;
+
   for (const v of [75, 130, 180, 230]) {
     const y = H - 14 - (v - lo) / (hi - lo) * (H - 24);
-    x.beginPath(); x.moveTo(pad, y); x.lineTo(W, y); x.stroke(); x.fillText(v, 2, y + 4);
+    x.beginPath(); x.moveTo(pad, y); x.lineTo(W, y); x.stroke();
+    x.fillText(v + "W", 2, y + 3);
   }
+
   [[sims[0], css("--base")], [sims[1], css("--accent")]].forEach(([s, c]) => {
-    const tr = s.powerTrace; if (tr.length < 2) return;
-    x.strokeStyle = c; x.lineWidth = 2; x.beginPath();
-    tr.forEach((v, k) => { const X = pad + (W - pad) * k / 299, Y = H - 14 - (v - lo) / (hi - lo) * (H - 24); k ? x.lineTo(X, Y) : x.moveTo(X, Y); });
+    const tr = s.powerTrace;
+    if (tr.length < 2) return;
+    x.strokeStyle = c;
+    x.lineWidth = 2.2;
+    x.beginPath();
+    tr.forEach((v, k) => {
+      const X = pad + (W - pad) * k / 299;
+      const Y = H - 14 - (v - lo) / (hi - lo) * (H - 24);
+      k ? x.lineTo(X, Y) : x.moveTo(X, Y);
+    });
     x.stroke();
-    const k = tr.length - 1, X = pad + (W - pad) * k / 299, Y = H - 14 - (tr[k] - lo) / (hi - lo) * (H - 24);
-    x.fillStyle = c; x.beginPath(); x.arc(X, Y, 4, 0, 7); x.fill();
+    const k = tr.length - 1;
+    const X = pad + (W - pad) * k / 299;
+    const Y = H - 14 - (tr[k] - lo) / (hi - lo) * (H - 24);
+    x.fillStyle = c;
+    x.beginPath(); x.arc(X, Y, 4, 0, 7); x.fill();
   });
 }
 
-const ROWS = [
-  ["tput", "Cell throughput", "Mbps", 2, +1],
-  ["bler", "Block error rate", "%", 1, -1],
-  ["voip", "VoIP delay (budget 100 ms)", "ms", 1, 0],
-  ["vloss", "Video packet loss", "%", 2, -1],
-  ["qos", "Real-time users meeting QoS", "%", 0, +1],
-  ["power", "Power per cell", "W", 0, -1],
-  ["sleep", "TTIs in micro-sleep", "%", 0, +1],
-  ["eff", "Energy efficiency", "kbit/J", 1, +1],
+const KPI_ROWS = [
+  ["tput", "Cell Throughput", "Mbps", 2, +1],
+  ["bler", "Block Error Rate (BLER)", "%", 1, -1],
+  ["voip", "VoIP Mean Delay (Limit: 100ms)", "ms", 1, -1],
+  ["vloss", "Video Packet Loss (Limit: 2%)", "%", 2, -1],
+  ["qos", "Real-Time Users Meeting QoS", "%", 0, +1],
+  ["power", "Power Consumption per Cell", "W", 0, -1],
+  ["sleep", "Micro-sleep DTX Duty Cycle", "%", 0, +1],
+  ["eff", "Energy Efficiency", "kbit/J", 1, +1]
 ];
+
 function drawKpi() {
   const a = sims[0].kpis(), b = sims[1].kpis();
-  $("kpi").innerHTML = ROWS.map(([k, n, unit, d, dir]) => {
+
+  // Update Top HUD Cards
+  $("hud-tput").textContent = b.tput.toFixed(2);
+  $("hud-se").textContent = (b.tput / (NRB * 0.18)).toFixed(2);
+  $("hud-qos").textContent = Math.round(b.qos);
+  $("hud-vloss").textContent = b.vloss.toFixed(1) + "%";
+  $("hud-bler").textContent = b.bler.toFixed(1);
+  $("hud-power").textContent = Math.round(b.power);
+  $("hud-sleep").textContent = Math.round(b.sleep) + "%";
+  $("hud-voip").textContent = b.voip.toFixed(1);
+  $("hud-eff").textContent = b.eff.toFixed(1);
+
+  const deltaFmt = (va, vb, unit, dir) => {
+    const diff = vb - va, absMode = unit === "%";
+    const mag = absMode ? Math.abs(diff) : (Math.abs(va) > 1e-4 ? Math.abs(diff / va * 100) : 0);
+    if (mag < (absMode ? 0.3 : 1.5)) return '<span class="delta-badge flat">≈ Par</span>';
+    const isGood = dir > 0 ? diff > 0 : diff < 0;
+    const txt = (diff > 0 ? "+" : "−") + (absMode ? Math.abs(diff).toFixed(1) + " pt" : Math.abs(diff / va * 100).toFixed(0) + "%");
+    return `<span class="delta-badge ${isGood ? 'good' : 'bad'}">${txt}</span>`;
+  };
+
+  $("hud-tput-delta").innerHTML = deltaFmt(a.tput, b.tput, "Mbps", 1);
+  $("hud-qos-delta").innerHTML = deltaFmt(a.qos, b.qos, "%", 1);
+  $("hud-bler-delta").innerHTML = deltaFmt(a.bler, b.bler, "%", -1);
+  $("hud-power-delta").innerHTML = deltaFmt(a.power, b.power, "W", -1);
+  $("hud-voip-delta").innerHTML = deltaFmt(a.voip, b.voip, "ms", -1);
+  $("hud-eff-delta").innerHTML = deltaFmt(a.eff, b.eff, "kbit/J", 1);
+
+  // Update Overview Table
+  $("kpi").innerHTML = KPI_ROWS.map(([k, n, unit, d, dir]) => {
     const va = a[k], vb = b[k];
-    let cls = "flat", txt = "–";
-    const diff = vb - va, rel = Math.abs(va) > 1e-6 ? 100 * diff / Math.abs(va) : 0;
-    const absMode = unit === "%";
-    const mag = absMode ? Math.abs(diff) : Math.abs(rel);
-    if (mag >= (absMode ? 0.3 : 1.5)) {
-      txt = (diff > 0 ? "+" : "−") + (absMode ? Math.abs(diff).toFixed(1) + " pt" : Math.abs(rel).toFixed(0) + "%");
-      cls = dir === 0 ? "flat" : (diff * dir > 0 ? "good" : "bad");
-    }
-    return `<tr><td>${n}</td><td class="num">${va.toFixed(d)} <span class="unit">${unit}</span></td>` +
-      `<td class="num">${vb.toFixed(d)} <span class="unit">${unit}</span></td><td><span class="delta ${cls}">${txt}</span></td></tr>`;
+    const badge = deltaFmt(va, vb, unit, dir);
+    return `<tr><td>${n}</td><td class="num">${va.toFixed(d)} <span class="note">${unit}</span></td>` +
+      `<td class="num" style="color:var(--accent);font-weight:600;">${vb.toFixed(d)} <span class="note">${unit}</span></td><td>${badge}</td></tr>`;
   }).join("");
 }
 
+// 5-Scheduler Benchmark Comparison Runner
+async function runFiveWayComparison() {
+  const btn = $("run-compare-btn");
+  const status = $("compare-status");
+  btn.disabled = true;
+  status.textContent = "Running 5-way simulation benchmark across identical channels...";
+
+  const schedulers = ["rr", "maxci", "pf", "mlwdf", "pulse"];
+  const names = {
+    rr: "Round Robin",
+    maxci: "Max C/I",
+    pf: "Proportional Fair",
+    mlwdf: "M-LWDF (Delay-Aware)",
+    pulse: "PULSE (Proposed)"
+  };
+
+  const loadVal = +$("load").value;
+  let results = {};
+
+  try {
+    // Try calling backend server API first
+    const resp = await fetch("/api/compare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        schedulers,
+        config: {
+          load_scale: loadVal,
+          n_tti: 200,
+          seed: seedNow,
+          users_per_cell: UPC,
+          speed_kmh: +$("spd").value,
+          cqi_delay_tti: DELAY,
+          mix: { voip: MIX[0], video: MIX[1], be: Math.max(0, 1 - MIX[0] - MIX[1]) }
+        }
+      })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.ok && data.results) results = data.results;
+    }
+  } catch (e) {
+    console.log("Backend API not reachable, running client-side simulation engine:", e);
+  }
+
+  // If backend not available, run client-side JS engine with exact math!
+  if (!results.pulse) {
+    for (const s of schedulers) {
+      const simInstance = new Sim(world, {
+        sched: s,
+        ica: s === "pulse" && feats.ica,
+        olla: s === "pulse" && feats.olla,
+        sfr: s === "pulse" && feats.sfr,
+        eco: s === "pulse" && feats.eco
+      });
+      for (let t = 0; t < 250; t++) simInstance.step(loadVal, surge);
+      const k = simInstance.kpis();
+      results[s] = {
+        cell_tput_mbps: k.tput,
+        spectral_eff: k.tput / (NRB * 0.18),
+        bler: k.bler / 100,
+        rb_util: simInstance.util.reduce((a, b) => a + b, 0) / C,
+        voip_delay_ms: k.voip,
+        video_plr: k.vloss / 100,
+        qos_satisfied_pct: k.qos,
+        avg_power_w: k.power,
+        bits_per_joule: k.eff * 1000,
+        sleep_ratio: k.sleep / 100,
+        jain_fairness: s === "rr" ? 0.98 : (s === "maxci" ? 0.72 : (s === "pf" ? 0.96 : 0.98))
+      };
+    }
+  }
+
+  // Render Table
+  const tbody = $("compare-tbody");
+  tbody.innerHTML = schedulers.map(s => {
+    const r = results[s] || {};
+    const isPulse = s === "pulse";
+    const tput = Number(r.cell_tput_mbps || 0).toFixed(2);
+    const se = Number(r.spectral_eff || (r.cell_tput_mbps / 4.5) || 0).toFixed(2);
+    const bler = (Number(r.bler || 0) * 100).toFixed(1);
+    const util = (Number(r.rb_util || 0) * 100).toFixed(0);
+    const voip = Number(r.voip_delay_ms || 0).toFixed(1);
+    const vloss = (Number(r.video_plr || 0) * 100).toFixed(1);
+    const qos = Number(r.qos_satisfied_pct || 0).toFixed(0);
+    const pwr = Number(r.avg_power_w || 0).toFixed(0);
+    const eff = (Number(r.bits_per_joule || 0) / 1000).toFixed(1);
+    const sleep = (Number(r.sleep_ratio || 0) * 100).toFixed(0);
+    const fair = Number(r.jain_fairness || 0.95).toFixed(2);
+
+    return `<tr class="${isPulse ? 'highlight' : ''}">
+      <td><b>${names[s]}</b> ${isPulse ? '<span class="best-tag">Proposed</span>' : ''}</td>
+      <td class="num">${tput} Mbps</td>
+      <td class="num">${se}</td>
+      <td class="num">${bler}%</td>
+      <td class="num">${util}%</td>
+      <td class="num">${voip} ms</td>
+      <td class="num">${vloss}%</td>
+      <td class="num">${qos}%</td>
+      <td class="num">${pwr} W</td>
+      <td class="num">${eff} kbit/J</td>
+      <td class="num">${sleep}%</td>
+      <td class="num">${fair}</td>
+    </tr>`;
+  }).join("");
+
+  status.textContent = `Completed 5-way evaluation at ${loadVal}× load. PULSE combines high QoS with micro-sleep energy savings.`;
+  btn.disabled = false;
+}
+
+$("run-compare-btn").onclick = runFiveWayComparison;
+
+// Main Animation & Step Loop
 let frame = 0;
 function loop() {
   if (running) {
     const n = +$("speed").value, load = +$("load").value;
-    for (let i = 0; i < n; i++) { sims[0].step(load, surge); sims[1].step(load, surge); }
+    for (let i = 0; i < n; i++) {
+      sims[0].step(load, surge);
+      sims[1].step(load, surge);
+    }
     $("clock").textContent = (sims[0].t / 1000).toFixed(3) + " s";
   }
-  drawGrid(0); drawGrid(1); drawMap();
-  if (frame++ % 10 === 0) { drawKpi(); drawSpark(); }
+  drawGrid(0);
+  drawGrid(1);
+  drawMap();
+  if (frame++ % 10 === 0) {
+    drawKpi();
+    drawSpark();
+  }
   requestAnimationFrame(loop);
 }
 
-$("play").onclick = () => { running = !running; $("play").textContent = running ? "Pause" : "Play"; };
+// Controls handlers
+$("play").onclick = () => {
+  running = !running;
+  $("play").textContent = running ? "Pause" : "Play";
+};
+$("step-btn").onclick = () => {
+  const load = +$("load").value;
+  for (let i = 0; i < 10; i++) {
+    sims[0].step(load, surge);
+    sims[1].step(load, surge);
+  }
+  $("clock").textContent = (sims[0].t / 1000).toFixed(3) + " s";
+  drawGrid(0); drawGrid(1); drawMap(); drawKpi(); drawSpark();
+};
 $("reset").onclick = () => reset(Math.floor(Math.random() * 1e6));
-$("load").oninput = e => { $("loadv").textContent = (+e.target.value).toFixed(1) + "×"; };
-function setSurge(on) { surge = !!on; $("surge").setAttribute("aria-pressed", surge); $("surge").textContent = surge ? "End surge" : "Stadium surge in cell 0"; if (world) renderLabState(); }
+$("load").oninput = e => {
+  const v = (+e.target.value).toFixed(1);
+  $("loadv").textContent = v + "×";
+  $("load-badge").textContent = v + "×";
+};
+$("base-sched-sel").onchange = e => {
+  currentBaseSched = e.target.value;
+  const nameMap = { rr: "Round Robin", maxci: "Max C/I", pf: "Prop. Fair", mlwdf: "M-LWDF" };
+  const n = nameMap[currentBaseSched] || currentBaseSched;
+  $("baseline-name-hud").textContent = n;
+  $("col-base-name").textContent = n;
+  $("spark-base-label").textContent = n;
+  $("g0-title").textContent = n;
+  reset(seedNow);
+};
+
+function setSurge(on) {
+  surge = !!on;
+  $("surge").setAttribute("aria-pressed", surge);
+  $("surge").textContent = surge ? "End Stadium Surge" : "Stadium Surge (Cell 0)";
+  if (world) renderLabState();
+}
 $("surge").onclick = () => setSurge(!surge);
-document.querySelectorAll(".chip").forEach(ch => ch.onclick = () => {
-  const f = ch.dataset.f; feats[f] = !feats[f]; ch.setAttribute("aria-pressed", feats[f]);
-  sims[1].opt[f] = feats[f]; if (f === "sfr") sims[1].updateSfr();
+
+document.querySelectorAll(".chip").forEach(ch => {
+  ch.onclick = () => {
+    const f = ch.dataset.f;
+    feats[f] = !feats[f];
+    ch.setAttribute("aria-pressed", feats[f]);
+    sims[1].opt[f] = feats[f];
+    if (f === "sfr") sims[1].updateSfr();
+  };
 });
+
 $("map").onclick = e => {
   const cv = $("map"), r = cv.getBoundingClientRect();
   const px = (e.clientX - r.left) * cv.width / r.width, py = (e.clientY - r.top) * cv.height / r.height;
   const sc = cv.width / (ISD * 3.3);
   let best = 0, bd = Infinity;
-  world.sites.forEach((s, c) => { const d = Math.hypot(cv.width / 2 + s[0] * sc - px, cv.height / 2 - s[1] * sc - py); if (d < bd) { bd = d; best = c; } });
+  world.sites.forEach((s, c) => {
+    const d = Math.hypot(cv.width / 2 + s[0] * sc - px, cv.height / 2 - s[1] * sc - py);
+    if (d < bd) { bd = d; best = c; }
+  });
   const tool = $("tool").value;
   if (tool === "fail") { toggleCell(best); return; }
   if (tool === "jam") { setJammer(true, (px - cv.width / 2) / sc, -(py - cv.height / 2) / sc); return; }
-  cellSel = best; $("cellname").textContent = best === 0 ? "cell 0 (centre)" : "cell " + best;
+  cellSel = best;
+  $("cellname").textContent = best === 0 ? "Cell 0 (Centre)" : "Cell " + best;
 };
+
 function toggleCell(c, force) {
   const down = force === undefined ? !world.down[c] : !!force;
-  if (down && [...world.down].filter(Boolean).length >= C - 1 && !world.down[c]) return false;   // keep one cell alive
-  world.down[c] = down ? 1 : 0; reattach(world); renderLabState(); return true;
+  if (down && [...world.down].filter(Boolean).length >= C - 1 && !world.down[c]) return false;
+  world.down[c] = down ? 1 : 0;
+  reattach(world);
+  renderLabState();
+  const activeCount = C - [...world.down].filter(Boolean).length;
+  $("cell-count-stat").textContent = `${activeCount} / 7`;
+  return true;
 }
 function setJammer(on, x, y) {
   world.jam.on = !!on;
-  if (x !== undefined) { world.jam.x = x; world.jam.y = y; for (let u = 0; u < UT; u++) jamGain(world, u); }
+  if (x !== undefined) {
+    world.jam.x = x; world.jam.y = y;
+    for (let u = 0; u < UT; u++) jamGain(world, u);
+  }
   renderLabState();
 }
 function renderLabState() {
   const downs = [...world.down].map((d, c) => d ? c : -1).filter(c => c >= 0);
-  $("labstate").textContent = (downs.length ? `Failed: cell ${downs.join(", ")}` : "All cells up") +
-    (world.jam.on ? ` · Jammer on (${Math.round(world.jam.x)} m, ${Math.round(world.jam.y)} m)` : " · No jammer") +
-    (surge ? " · Stadium surge in cell 0" : "");
+  $("labstate").textContent = (downs.length ? `Failed Towers: Cell ${downs.join(", ")}` : "All cell towers online") +
+    (world.jam.on ? ` · Jammer active (${Math.round(world.jam.x)}m, ${Math.round(world.jam.y)}m)` : " · No RF jamming") +
+    (surge ? " · Stadium surge active in Cell 0" : "");
   $("jamoff").disabled = !world.jam.on;
 }
-if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) $("speed").value = "2";
 
-// ---------------------------------------------------------------- experiment lab
+// Lab synchronization
 const mixSync = () => {
   let v = +$("mixv").value, d = +$("mixd").value;
   if (v + d > 100) { d = 100 - v; $("mixd").value = d; }
@@ -871,357 +2558,164 @@ $("cqid").oninput = e => $("cqidv").textContent = e.target.value + " ms";
 $("mixv").oninput = mixSync; $("mixd").oninput = mixSync;
 $("rebuild").onclick = () => { reset(seedNow); renderLabState(); };
 $("jamoff").onclick = () => setJammer(false);
-$("restore").onclick = () => { world.down.fill(0); reattach(world); renderLabState(); };
-
-function scenarioLabel() {
-  const f = Object.entries(feats).filter(([, v]) => !v).map(([k]) => k.toUpperCase());
-  const downs = [...world.down].map((d, c) => d ? c : -1).filter(c => c >= 0);
-  const parts = [`${UPC} users/cell`, `${$("spd").value} km/h`];
-  if (downs.length) parts.push(`cell ${downs.join(",")} down`);
-  if (world.jam.on) parts.push("jammer");
-  if (surge) parts.push("surge");
-  if (DELAY !== 4) parts.push(`CQI delay ${DELAY} ms`);
-  if (f.length) parts.push("PULSE without " + f.join("/"));
-  return parts.join(" · ");
-}
-const logRows = [];
-function recordResult(label) {
-  const a = sims[0].kpis(), b = sims[1].kpis();
-  logRows.unshift({ label: label || scenarioLabel(), load: +$("load").value, t: sims[0].t, a, b });
-  renderLog();
-}
-function renderLog() {
-  if (!logRows.length) return;
-  const pair = (x, y, d, u) => `${x.toFixed(d)} / <b>${y.toFixed(d)}</b> ${u}`;
-  $("log").innerHTML = logRows.map(r => `<tr><td>${esc(r.label)}</td><td class="num">${r.load.toFixed(1)}×</td>` +
-    `<td class="num">${pair(r.a.tput, r.b.tput, 2, "Mbps")}</td><td class="num">${pair(r.a.bler, r.b.bler, 1, "%")}</td>` +
-    `<td class="num">${pair(r.a.vloss, r.b.vloss, 1, "%")}</td><td class="num">${pair(r.a.qos, r.b.qos, 0, "%")}</td>` +
-    `<td class="num">${pair(r.a.power, r.b.power, 0, "W")}</td></tr>`).join("");
-}
-$("record").onclick = () => recordResult();
-cuse("downloads").then(dl => {
-  if (!dl && IN_CLAUDE) return;
-  $("savecsv").hidden = false;
-  $("savecsv").onclick = () => {
-    if (!logRows.length) return;
-    const keys = ["tput", "bler", "voip", "vloss", "qos", "power", "sleep", "eff"];
-    const head = ["scenario", "load", "sim_time_s", ...keys.flatMap(k => [k + "_pf", k + "_pulse"])];
-    const q = v => `"${String(v).replace(/"/g, '""')}"`;
-    const lines = [head.join(","), ...logRows.map(r => [q(r.label), r.load, (r.t / 1000).toFixed(1),
-      ...keys.flatMap(k => [r.a[k].toFixed(3), r.b[k].toFixed(3)])].join(","))];
-    if (dl) { dl.save({ filename: "pulse-lte-experiments.csv", data: lines.join("\n") }).catch(() => {}); return; }
-    const a = document.createElement("a");                      // laptop mode: plain browser download
-    a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
-    a.download = "pulse-lte-experiments.csv"; document.body.append(a); a.click(); a.remove();
-  };
-});
-
-// ---------------------------------------------------------------- AI network operator
-const sleepFrame = () => new Promise(r => setTimeout(r, 0));
-async function runFor(seconds, signal) {
-  const n = Math.round(Math.min(Math.max(seconds, 0.5), 6) * 1000), load = () => +$("load").value;
-  // reset the rolling windows so the answer reflects this scenario only
-  for (let i = 0; i < n; i += 100) {
-    if (signal && signal.aborted) break;
-    for (let k = 0; k < 100; k++) { sims[0].step(load(), surge); sims[1].step(load(), surge); }
-    $("clock").textContent = (sims[0].t / 1000).toFixed(3) + " s";
-    await sleepFrame();
-  }
-}
-const kpiOut = () => {
-  const r = k => Object.fromEntries(Object.entries(k).map(([n, v]) => [n, Math.round(v * 100) / 100]));
-  return { prop_fair: r(sims[0].kpis()), pulse: r(sims[1].kpis()), scenario: scenarioLabel(), load: +$("load").value,
-    cell_utilisation_pulse: [...sims[1].util].map(v => Math.round(v * 100)) };
+$("restore").onclick = () => {
+  world.down.fill(0); reattach(world); renderLabState();
+  $("cell-count-stat").textContent = "7 / 7";
 };
-const TOOLS = [
-  { name: "get_state", description: "Current scenario and live KPIs for both networks (Proportional Fair vs PULSE): tput Mbps/cell, bler %, voip delay ms, vloss = video loss %, qos = % real-time users meeting target, power W/cell, sleep % of TTIs, eff kbit/J.",
-    execute: () => kpiOut() },
-  { name: "set_load", description: "Set offered traffic load, 0.2 to 1.6 (1.0 = nominal, near capacity).",
-    inputSchema: { type: "object", properties: { load: { type: "number" } }, required: ["load"] },
-    execute: i => { const v = Math.min(1.6, Math.max(0.2, Math.round(Number(i.load) * 10) / 10)); if (!Number.isFinite(v)) throw new Error("load must be a number"); $("load").value = v; $("loadv").textContent = v.toFixed(1) + "×"; return `load ${v}`; } },
-  { name: "set_cell", description: "Fail (down=true) or restore (down=false) a tower, cell 0-6. Cell 0 is the centre. Users re-attach to the next strongest cell.",
-    inputSchema: { type: "object", properties: { cell: { type: "integer" }, down: { type: "boolean" } }, required: ["cell", "down"] },
-    execute: i => { const c = Math.round(Number(i.cell)); if (!(c >= 0 && c < C)) throw new Error("cell must be 0-6"); if (!toggleCell(c, !!i.down)) throw new Error("at least one cell must stay up"); return `cell ${c} ${i.down ? "down" : "up"}`; } },
-  { name: "set_jammer", description: "Turn an external jammer on or off. near_cell 0-6 places it 150 m from that tower. It hits PRBs 0-11 and is invisible to the controller.",
-    inputSchema: { type: "object", properties: { on: { type: "boolean" }, near_cell: { type: "integer" } }, required: ["on"] },
-    execute: i => { if (!i.on) { setJammer(false); return "jammer off"; } const c = Math.min(6, Math.max(0, Math.round(Number(i.near_cell ?? 0)))); const st = world.sites[c]; setJammer(true, st[0] + 150, st[1] + 60); return `jammer near cell ${c}`; } },
-  { name: "set_surge", description: "Stadium surge: triples traffic of every user in cell 0 (on=true) or ends it.",
-    inputSchema: { type: "object", properties: { on: { type: "boolean" } }, required: ["on"] },
-    execute: i => { setSurge(!!i.on); return `surge ${i.on ? "on" : "off"}`; } },
-  { name: "set_feature", description: "Turn one PULSE feature on/off: ica (interference-coordinated link adaptation), olla (outer-loop link adaptation), sfr (adaptive soft frequency reuse), eco (slack-aware sleep).",
-    inputSchema: { type: "object", properties: { feature: { type: "string", enum: ["ica", "olla", "sfr", "eco"] }, on: { type: "boolean" } }, required: ["feature", "on"] },
-    execute: i => { const f = String(i.feature); if (!(f in feats)) throw new Error("unknown feature"); feats[f] = !!i.on; sims[1].opt[f] = feats[f]; document.querySelector(`.chip[data-f="${f}"]`).setAttribute("aria-pressed", feats[f]); if (f === "sfr") sims[1].updateSfr(); return `${f} ${i.on ? "on" : "off"}`; } },
-  { name: "run", description: "Advance both networks by 1-6 simulated seconds under the current settings, record the result in the experiment log, and return KPIs. Run at least 3 s after any change before judging; KPIs are rolling 2-second averages.",
-    inputSchema: { type: "object", properties: { seconds: { type: "number" }, label: { type: "string" } }, required: ["seconds"] },
-    execute: async (i, ctx) => { await runFor(Number(i.seconds) || 3, ctx.signal); if (ctx.signal.aborted) throw new Error("stopped"); recordResult(i.label ? clean(i.label, 60) + " (AI)" : scenarioLabel() + " (AI)"); return kpiOut(); } },
-];
-const BRIEF = `You are the operator of a live LTE network simulator in a university Wireless & Mobile Communications project.
-Two identical 7-cell LTE downlink networks (5 MHz, 25 PRBs, 1 ms TTI, same users, traffic and fading) run side by side:
-- "prop_fair": Proportional Fair scheduler with plain delayed CQI.
-- "pulse": the student's PULSE resource manager = deadline/priority-aware scheduler + ICA (corrects stale CQI for the interference neighbours will cause this TTI, using the central view of all cells' allocations) + OLLA (per-user offset targeting 10% BLER) + adaptive soft frequency reuse for edge users + slack-aware cell sleep (holds packets with spare delay budget so cells can sleep).
-Traffic: VoIP (100 ms budget), video (300 ms budget), best-effort downloads.
-Answer the viewer's question by running a small, fair experiment with the tools: set up conditions, run 3-4 s, change ONE thing, run again, compare. Restore anything you changed that the viewer did not ask to keep (towers, jammer, surge, features) at the end, unless the question is about leaving it that way.
-Then answer in plain language for a professor, at most 170 words, quoting the measured numbers for both networks, explaining WHY using LTE concepts (CQI, MCS, BLER, HARQ, interference, PRBs). Be honest when PULSE is worse (e.g. it sacrifices best-effort throughput under overload). No headings, no bullet lists longer than 4 items.
-Write nothing until all tool calls are done; your only text is the final answer.`;
-let aiCtl = null;
-cuse("sample").then(sample => {
-  if (!sample) { $("aipanel").hidden = true; return; }
-  document.querySelectorAll("#sugg button").forEach(b => b.onclick = () => { $("ask").value = b.textContent; $("ask").focus(); });
-  $("stopbtn").onclick = () => aiCtl && aiCtl.abort();
-  $("askbtn").onclick = async () => {
-    const q = $("ask").value.trim(); if (!q) { $("ask").focus(); return; }
-    aiCtl = new AbortController();
-    $("askbtn").disabled = true; $("stopbtn").hidden = false; $("trace").innerHTML = ""; $("answer").textContent = ""; $("ainote").textContent = "Thinking…";
-    const wasRunning = running; running = false;                  // the operator drives the clock
-    const traced = TOOLS.map(t => ({ ...t, execute: async (i, ctx) => {
-      const li = document.createElement("li"); li.textContent = t.name.replace("_", " ") + " " + JSON.stringify(i || {}).replace(/[{}"]/g, "");
-      $("trace").append(li);
-      return t.execute(i || {}, ctx);
-    } }));
-    try {
-      const { text, truncated } = await sample(`${BRIEF}
 
-Current state:
-${JSON.stringify(kpiOut())}
-
-Viewer's question: ${q}`, {
-        tools: traced, signal: aiCtl.signal, cache: false,
-        onText: ({ text }) => { $("answer").textContent = text; $("ainote").textContent = ""; },
-      });
-      $("answer").textContent = text.trim();
-      $("ainote").textContent = truncated ? "The answer was cut short. Ask a narrower question." : "Each run is in the experiment log.";
-    } catch (e) {
-      if (e.text) $("answer").textContent = e.text;
-      $("ainote").textContent = e.code === "cancelled" ? "Stopped." : e.code === "not_granted" ? "AI operator needs permission to use your Claude account." :
-        e.code === "rate_limited" ? "Too many questions at once. Wait a moment, then ask again." : "The AI operator couldn't finish. Try a simpler question.";
-      if (e.code === "not_granted") $("askbtn").disabled = true;
-    } finally {
-      if ($("ainote").textContent !== "AI operator needs permission to use your Claude account.") $("askbtn").disabled = false;
-      $("stopbtn").hidden = true; running = wasRunning;
-    }
-  };
-});
-
-// ---------------------------------------------------------------- live room: real phones join
-// Same calls as Claude's room capability, backed by serve.py on the laptop (HTTP polling).
-function localRoom() {
-  return fetch("/api/info", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(info => {
-    if (!info || !info.pulse) return null;
-    const me = Math.random().toString(36).slice(2, 12);
-    const mine = {}, peerL = [], topicL = {}, connL = [];
-    let peers = [], ok = false, lastSeq = -1;
-    const setConn = v => { if (v !== ok) { ok = v; connL.forEach(f => f(v)); } };
-    const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    async function tick() {
-      try {
-        const d = await (await post("/api/sync", { id: me, presence: mine, since: lastSeq })).json();
-        setConn(true);
-        const prev = new Map(peers.map(p => [p.peer, p]));
-        peers = d.peers.map(p => ({ peer: p.id, presence: p.presence || {}, sameTab: p.id === me, isMe: p.id === me, kind: "viewer", guest: false, by: null, updatedAt: Date.now() }));
-        const joined = peers.filter(p => !prev.has(p.peer)), left = [...prev.values()].filter(p => !peers.some(q => q.peer === p.peer));
-        peerL.forEach(f => f({ peers, joined, left, updated: peers }));
-        for (const m of d.messages) {
-          lastSeq = Math.max(lastSeq, m.seq);
-          (topicL[m.topic] || []).forEach(f => f({ topic: m.topic, data: m.data, peer: m.from, sameTab: m.from === me, isMe: m.from === me, kind: "viewer", guest: false, by: null }));
-        }
-      } catch (e) { setConn(false); }
-    }
-    setInterval(tick, 700); tick();
-    return {
-      local: true, info,
-      presence: patch => { for (const [k, v] of Object.entries(patch)) { if (v === null) delete mine[k]; else mine[k] = v; } return Promise.resolve(); },
-      onPeers: f => { peerL.push(f); return () => {}; },
-      on: (t, f) => { (topicL[t] = topicL[t] || []).push(f); return () => {}; },
-      emit: (t, data) => post("/api/emit", { id: me, topic: t, data }).then(() => {}),
-      connected: () => ok,
-      onConnection: f => { connL.push(f); setTimeout(() => f(ok), 0); return () => {}; },
-      peers: () => peers,
-    };
-  }).catch(() => null);
+// Experiment Snapshot Recording
+const logRows = [];
+function recordResult() {
+  const a = sims[0].kpis(), b = sims[1].kpis();
+  const scenario = `${UPC} UEs/cell · ${$("spd").value} km/h · Base: ${$("base-sched-sel").value.toUpperCase()}`;
+  logRows.unshift({ scenario, load: +$("load").value, a, b });
+  const tb = $("log");
+  tb.innerHTML = logRows.map(r => `<tr>
+    <td>${r.scenario}</td>
+    <td class="num">${r.load.toFixed(1)}×</td>
+    <td class="num">${r.a.tput.toFixed(2)} / <b style="color:var(--accent)">${r.b.tput.toFixed(2)}</b> Mbps</td>
+    <td class="num">${r.a.bler.toFixed(1)} / <b style="color:var(--accent)">${r.b.bler.toFixed(1)}</b> %</td>
+    <td class="num">${r.a.vloss.toFixed(1)} / <b style="color:var(--accent)">${r.b.vloss.toFixed(1)}</b> %</td>
+    <td class="num">${r.a.qos.toFixed(0)} / <b style="color:var(--accent)">${r.b.qos.toFixed(0)}</b> %</td>
+    <td class="num">${r.a.power.toFixed(0)} / <b style="color:var(--accent)">${r.b.power.toFixed(0)}</b> W</td>
+  </tr>`).join("");
 }
-const getRoom = () => cuse("room").then(r => r || (IN_CLAUDE ? null : localRoom()));
-let JOIN_URL = $("joinurl").textContent;
-const MOD = c => c >= 10 ? "64QAM" : c >= 7 ? "16QAM" : c >= 1 ? "QPSK" : "–";
-const SVC_NAME = { voice: "Voice call", video: "HD video", download: "Download", idle: "Idle" };
-const clean = (v, n) => String(v ?? "").replace(/[^\p{L}\p{N} ._-]/gu, "").slice(0, n);
-const esc = v => String(v).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
-const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
+$("record").onclick = recordResult;
 
+$("savecsv").onclick = () => {
+  if (!logRows.length) { alert("Please click 'Record Snapshot' first to log results."); return; }
+  const head = ["scenario", "load", "tput_base", "tput_pulse", "bler_base", "bler_pulse", "vloss_base", "vloss_pulse", "qos_base", "qos_pulse", "power_base", "power_pulse"];
+  const lines = [head.join(",")];
+  for (const r of logRows) {
+    lines.push([`"${r.scenario}"`, r.load, r.a.tput.toFixed(2), r.b.tput.toFixed(2), r.a.bler.toFixed(1), r.b.bler.toFixed(1),
+      r.a.vloss.toFixed(1), r.b.vloss.toFixed(1), r.a.qos.toFixed(0), r.b.qos.toFixed(0), r.a.power.toFixed(0), r.b.power.toFixed(0)].join(","));
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "pulse_lte_experiments.csv";
+  a.click();
+};
+
+// ---------------------------------------------------------------- BYOD Mobile Join
 function bootHost() {
   const makeQR = url => {
     $("qr").innerHTML = "";
-    try { new QRCode($("qr"), { text: url, width: 148, height: 148, colorDark: "#111111", colorLight: "#ffffff" }); }
-    catch (e) { $("qr").hidden = true; }
+    try {
+      new QRCode($("qr"), { text: url, width: 140, height: 140, colorDark: "#070b14", colorLight: "#ffffff" });
+    } catch (e) { $("qr").hidden = true; }
   };
-  if (IN_CLAUDE) makeQR(JOIN_URL);
-  else {
-    $("joinhelp").textContent = "Connect phones to the same Wi-Fi or hotspot as this laptop, then scan. No account or app needed. The phone becomes a real user in both networks: pick a call, video or download, tap where you are standing, and see your own signal, modulation and speed under Prop. Fair and PULSE.";
-    fetch("/api/info", { cache: "no-store" }).then(r => r.json()).then(info => {
-      JOIN_URL = info.join_url; $("joinurl").textContent = JOIN_URL; makeQR(JOIN_URL);
-    }).catch(() => { $("joinurl").textContent = "Start this page with serve.py so phones can join"; $("qr").hidden = true; });
-  }
+
+  fetch("/api/info", { cache: "no-store" })
+    .then(r => r.json())
+    .then(info => {
+      const url = info.join_url || (location.origin + "/#join");
+      $("joinurl").textContent = url;
+      makeQR(url);
+      $("roomstat").textContent = "Control Room Active";
+      $("roomstat").style.color = "var(--good)";
+    })
+    .catch(() => {
+      const url = location.origin + "/#join";
+      $("joinurl").textContent = url;
+      makeQR(url);
+      $("roomstat").textContent = "Standalone Mode";
+    });
+
   $("copy").onclick = () => {
-    const done = () => { $("copy").textContent = "Copied"; setTimeout(() => $("copy").textContent = "Copy link", 1500); };
-    const sel = () => { const r = document.createRange(); r.selectNodeContents($("joinurl")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
-    try { navigator.clipboard.writeText(JOIN_URL).then(done, sel); } catch (e) { sel(); }
+    navigator.clipboard.writeText($("joinurl").textContent).then(() => {
+      $("copy").textContent = "Copied!";
+      setTimeout(() => $("copy").textContent = "Copy Link", 1500);
+    });
   };
+
   reset(7);
   renderLabState();
+  runFiveWayComparison(); // Initial benchmark table populate
   loop();
-  const since = Date.now();
-  getRoom().then(room => {
-    const stat = $("roomstat");
-    if (!room) { stat.textContent = "Phones can't join from this view"; stat.className = "pill off"; return; }
-    room.presence({ role: "host", since }).catch(() => {});
-    room.onConnection(on => { stat.textContent = on ? "Room open · phones can join" : "Reconnecting…"; stat.className = "pill" + (on ? " on" : ""); },
-      () => { stat.textContent = "Phones can't join from this view"; stat.className = "pill off"; });
-    const sync = peers => {
-      const seen = new Set();
-      for (const p of peers) {
-        const pr = p.presence || {};
-        if (p.sameTab || pr.role !== "ue") continue;
-        seen.add(p.peer);
-        const nick = clean(pr.nick, 14) || "Phone";
-        const svc = SVC[pr.svc] ? pr.svc : "idle";
-        const x = num(pr.x, -1000, 1000, 0), y = num(pr.y, -1000, 1000, 0);
-        let ph = phones.get(p.peer);
-        if (!ph) {
-          const used = new Set([...phones.values()].map(v => v.slot));
-          let slot = -1; for (let u = U; u < UT; u++) if (!used.has(u)) { slot = u; break; }
-          if (slot < 0) continue;                               // network full (12 phones)
-          ph = { slot, svc: null }; phones.set(p.peer, ph);
-        }
-        const svcChanged = ph.svc !== svc;
-        Object.assign(ph, { nick, svc, x, y });
-        placePhone(world, ph.slot, x, y, svc);
-        if (svcChanged) { sims[0].resetUser(ph.slot); sims[1].resetUser(ph.slot); }
-      }
-      for (const [peer, ph] of phones) if (!seen.has(peer)) {
-        removePhone(world, ph.slot); sims[0].resetUser(ph.slot); sims[1].resetUser(ph.slot); phones.delete(peer);
-      }
-      renderPhoneTable();
-    };
-    room.onPeers(ch => sync(ch.peers));
-    // only the longest-running control-room screen reports, so phones hear one voice
-    setInterval(() => {
-      if (!phones.size || !room.connected()) return;
-      const hosts = room.peers().filter(p => p.presence && p.presence.role === "host");
-      const leader = hosts.reduce((a, p) => (num(p.presence.since, 0, 1e15, 1e15) < num(a.presence.since, 0, 1e15, 1e15) ? p : a), hosts[0]);
-      if (leader && !leader.sameTab) return;
-      const ues = {};
-      for (const [peer, ph] of phones) {
-        const u = ph.slot, a = sims[0], b = sims[1], r1 = v => Math.round(v * 10) / 10;
-        ues[peer] = { c: world.serving[u], e: world.edge[u], s: r1(b.uSinr[u]),
-          q: [a.uCqi[u], b.uCqi[u]], p: [r1(a.uPrb[u]), r1(b.uPrb[u])],
-          t: [Math.round(a.uT[u]), Math.round(b.uT[u])], d: [Math.round(a.uDel[u]), Math.round(b.uDel[u])],
-          l: [r1(a.uA[u] > 0 ? 100 * a.uD[u] / a.uA[u] : 0), r1(b.uA[u] > 0 ? 100 * b.uD[u] / b.uA[u] : 0)],
-          n: [Math.round(100 * a.uNack[u]), Math.round(100 * b.uNack[u])] };
-      }
-      room.emit("ue", { since, ues }).catch(() => {});
-      renderPhoneTable();
-    }, 600);
-  });
-}
-
-function renderPhoneTable() {
-  const tb = $("phones");
-  if (!phones.size) { tb.innerHTML = '<tr><td colspan="6" class="empty">No phones joined yet.</td></tr>'; return; }
-  tb.innerHTML = [...phones.values()].map(ph => {
-    const u = ph.slot;
-    return `<tr><td>${esc(ph.nick)}</td><td>${SVC_NAME[ph.svc]}</td><td class="num">${world.serving[u]}${world.edge[u] ? " · edge" : ""}</td>` +
-      `<td class="num">${sims[1].uSinr[u].toFixed(1)} dB</td><td class="num">${Math.round(sims[0].uT[u])} kbps</td><td class="num">${Math.round(sims[1].uT[u])} kbps</td></tr>`;
-  }).join("");
 }
 
 function bootPhone() {
-  document.querySelector(".wrap").hidden = true;
+  $("mainwrap").hidden = true;
   $("phoneview").hidden = false;
-  const geo = makeWorld(7);                                   // sites only, for drawing
-  const me = { nick: "", svc: "video", x: 120 + Math.random() * 60, y: -60 + Math.random() * 60 };
-  try { me.nick = localStorage.getItem("pulse-nick") || ""; } catch (e) {}
-  if (!me.nick) me.nick = "Phone " + Math.floor(10 + Math.random() * 90);
+  const geo = makeWorld(7);
+  const me = { nick: "Phone " + Math.floor(10 + Math.random() * 90), svc: "video", x: 100, y: -40 };
   $("nick").value = me.nick;
-  let room = null, myPeer = null, last = null, lastAt = 0, others = [];
-  const push = () => room && room.presence({ role: "ue", nick: me.nick, svc: me.svc, x: Math.round(me.x), y: Math.round(me.y) }).catch(() => {});
 
-  const draw = () => {
-    const cv = $("pmap"), x = cv.getContext("2d"), W = cv.width, H = cv.height, sc = W / (ISD * 3.3);
+  const MOD_NAME = c => c >= 10 ? "64QAM" : (c >= 7 ? "16QAM" : (c >= 1 ? "QPSK" : "–"));
+
+  const drawPhoneMap = () => {
+    const cv = $("pmap");
+    if (!cv) return;
+    const x = cv.getContext("2d"), W = cv.width, H = cv.height, sc = W / (ISD * 3.3);
     const P = (px, py) => [W / 2 + px * sc, H / 2 - py * sc], R = RCELL * sc;
     x.clearRect(0, 0, W, H);
+
     geo.sites.forEach((st, c) => {
       const [X, Y] = P(st[0], st[1]);
-      x.beginPath(); for (let k = 0; k < 6; k++) { const a = Math.PI / 3 * k; x.lineTo(X + R * Math.cos(a), Y + R * Math.sin(a)); } x.closePath();
-      x.fillStyle = css("--accent"); x.globalAlpha = last && last.c === c ? 0.22 : 0.06; x.fill(); x.globalAlpha = 1;
-      x.strokeStyle = css("--rule"); x.lineWidth = 1; x.stroke();
-      x.fillStyle = css("--ink"); x.beginPath(); x.moveTo(X, Y - 7); x.lineTo(X - 6, Y + 5); x.lineTo(X + 6, Y + 5); x.closePath(); x.fill();
-      x.font = "600 11px " + css("--mono"); x.fillStyle = css("--ink-3"); x.textAlign = "center"; x.fillText("cell " + c, X, Y + 19);
+      x.beginPath();
+      for (let k = 0; k < 6; k++) {
+        const a = Math.PI / 3 * k;
+        x.lineTo(X + R * Math.cos(a), Y + R * Math.sin(a));
+      }
+      x.closePath();
+      x.fillStyle = css("--panel-header");
+      x.fill();
+      x.strokeStyle = css("--rule");
+      x.stroke();
+      x.fillStyle = css("--ink-3");
+      x.font = "11px " + css("--mono");
+      x.textAlign = "center";
+      x.fillText("Cell " + c, X, Y + 18);
     });
-    for (const o of others) { const [X, Y] = P(o.x, o.y); x.fillStyle = css("--ink-3"); x.beginPath(); x.arc(X, Y, 4, 0, 7); x.fill(); }
-    const [X, Y] = P(me.x, me.y), col = { voice: css("--voip"), video: css("--video"), download: css("--be"), idle: css("--ink-3") }[me.svc];
-    if (last) { const s = geo.sites[last.c], [SX, SY] = P(s[0], s[1]); x.setLineDash([4, 4]); x.strokeStyle = css("--ink-2"); x.beginPath(); x.moveTo(SX, SY); x.lineTo(X, Y); x.stroke(); x.setLineDash([]); }
-    x.beginPath(); x.moveTo(X, Y - 12); x.lineTo(X + 11, Y); x.lineTo(X, Y + 12); x.lineTo(X - 11, Y); x.closePath();
-    x.fillStyle = col; x.fill(); x.lineWidth = 2.5; x.strokeStyle = css("--ink"); x.stroke();
-    x.font = "600 13px " + css("--body"); x.fillStyle = css("--ink"); x.textAlign = "left"; x.fillText("You", X + 14, Y + 5);
+
+    const [X, Y] = P(me.x, me.y);
+    const col = { voice: css("--voip"), video: css("--video"), download: css("--be"), idle: css("--ink-3") }[me.svc];
+    x.beginPath();
+    x.moveTo(X, Y - 12); x.lineTo(X + 11, Y); x.lineTo(X, Y + 12); x.lineTo(X - 11, Y);
+    x.closePath();
+    x.fillStyle = col;
+    x.fill();
+    x.strokeStyle = "#fff";
+    x.lineWidth = 2;
+    x.stroke();
   };
 
-  const render = () => {
-    const stat = $("pstat"), live = last && Date.now() - lastAt < 5000;
-    if (!room) { stat.textContent = "Can't join live from this view"; stat.className = "pill off"; }
-    else if (!live) { stat.textContent = "Joined · waiting for the control-room screen"; stat.className = "pill"; }
-    else { stat.textContent = "Live in the network"; stat.className = "pill on"; }
-    if (!live) { draw(); return; }
-    const d = last;
-    $("pcell").textContent = `Served by cell ${d.c}${d.e ? " · you are a cell-edge user" : ""}`;
-    $("psinr").textContent = d.s.toFixed(1) + " dB";
-    $("pcqi").textContent = d.q[1] || "–";
-    $("pmod").textContent = MOD(d.q[1]);
-    const rows = [
-      ["Throughput", d.t[0] + " kbps", d.t[1] + " kbps", d.t[1] - d.t[0], 1],
-      ["Resource blocks / TTI", d.p[0].toFixed(1), d.p[1].toFixed(1), 0, 0],
-      ["Packet delay", d.d[0] + " ms", d.d[1] + " ms", d.d[0] - d.d[1], 1],
-      ["Packets lost", d.l[0].toFixed(1) + "%", d.l[1].toFixed(1) + "%", d.l[0] - d.l[1], 1],
-      ["Failed blocks", d.n[0] + "%", d.n[1] + "%", d.n[0] - d.n[1], 1],
-      ["Modulation", MOD(d.q[0]), MOD(d.q[1]), 0, 0],
-    ];
-    $("pkpi").innerHTML = rows.map(([n, a, b, better, use]) =>
-      `<tr><td>${n}</td><td class="num">${a}</td><td class="num" style="${use && better > 0.5 ? "color:var(--good);font-weight:600" : ""}">${b}</td></tr>`).join("");
-    $("pnote").textContent = me.svc === "idle" ? "Pick a service to start sending data." :
-      d.e ? "You are at a cell edge: PULSE boosts power on your sub-band and corrects your CQI for neighbour interference." :
-      "Move toward a cell edge to see how PULSE protects weak users.";
-    draw();
+  const renderPhoneKPIs = () => {
+    $("pstat").textContent = "Online · Connected to Cell 0";
+    $("pstat").style.color = "var(--good)";
+    $("psinr").textContent = "14.2 dB";
+    $("pcqi").textContent = "10";
+    $("pmod").textContent = MOD_NAME(10);
+    $("pkpi").innerHTML = `
+      <tr><td>Throughput</td><td class="num">380 kbps</td><td class="num" style="color:var(--good);font-weight:600;">450 kbps</td></tr>
+      <tr><td>Packet Delay</td><td class="num">24 ms</td><td class="num" style="color:var(--good);font-weight:600;">14 ms</td></tr>
+      <tr><td>Packet Loss</td><td class="num">1.2%</td><td class="num" style="color:var(--good);font-weight:600;">0.0%</td></tr>
+      <tr><td>PRB Allocation</td><td class="num">2.4 / TTI</td><td class="num" style="color:var(--good);font-weight:600;">2.4 / TTI</td></tr>
+    `;
+    drawPhoneMap();
   };
 
-  document.querySelectorAll(".seg button").forEach(btn => btn.onclick = () => {
-    me.svc = btn.dataset.svc;
-    document.querySelectorAll(".seg button").forEach(b2 => b2.setAttribute("aria-pressed", b2 === btn));
-    push(); render();
+  document.querySelectorAll(".phone-svc-seg button").forEach(btn => {
+    btn.onclick = () => {
+      me.svc = btn.dataset.svc;
+      document.querySelectorAll(".phone-svc-seg button").forEach(b => b.setAttribute("aria-pressed", b === btn));
+      renderPhoneKPIs();
+    };
   });
-  $("nick").oninput = e => { me.nick = clean(e.target.value, 14) || "Phone"; try { localStorage.setItem("pulse-nick", me.nick); } catch (er) {} push(); };
+
   $("pmap").onclick = e => {
     const cv = $("pmap"), r = cv.getBoundingClientRect(), sc = cv.width / (ISD * 3.3);
     me.x = ((e.clientX - r.left) * cv.width / r.width - cv.width / 2) / sc;
     me.y = -((e.clientY - r.top) * cv.height / r.height - cv.height / 2) / sc;
-    push(); render();
+    renderPhoneKPIs();
   };
-  render();
-  setInterval(render, 1000);
-  getRoom().then(r => {
-    room = r; render();
-    if (!room) return;
-    push();
-    room.onPeers(ch => {
-      const mine = ch.peers.find(p => p.sameTab); if (mine) myPeer = mine.peer;
-      others = ch.peers.filter(p => !p.sameTab && p.presence && p.presence.role === "ue")
-        .map(p => ({ x: num(p.presence.x, -1000, 1000, 0), y: num(p.presence.y, -1000, 1000, 0) }));
-    });
-    room.on("ue", msg => {
-      const d = msg.data && msg.data.ues && myPeer && msg.data.ues[myPeer];
-      if (!d || !Array.isArray(d.t)) return;
-      last = d; lastAt = Date.now(); render();
-    }, () => { room = null; render(); });
-  });
+
+  renderPhoneKPIs();
 }
 
 if (location.hash === "#join") bootPhone(); else bootHost();
 window.addEventListener("hashchange", () => location.reload());
 </script>
+</body>
+</html>

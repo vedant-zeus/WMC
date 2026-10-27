@@ -2,7 +2,19 @@
 from collections import deque
 
 import numpy as np
-from scipy.special import j0
+try:
+    from scipy.special import j0
+except (ImportError, OSError):
+    def j0(x):
+        """Bessel function of the first kind order 0 (Taylor series fallback)."""
+        s, t, x2_4 = 0.0, 1.0, (float(x) * 0.5) ** 2
+        for k in range(1, 15):
+            s += t
+            t *= -x2_4 / (k * k)
+            if abs(t) < 1e-15:
+                break
+        return s
+
 
 from .config import SimConfig
 from .phy import sinr_to_cqi, cqi_to_eff, bler
@@ -291,10 +303,14 @@ class LTESimulator:
         out["be_goodput_ratio"] = self.served_bits[be].sum() / max(self.arrived_bits[be].sum(), 1)
         for k, name in CLASS_NAMES.items():
             m = self.cls == k
-            d = np.array(self.delays[k]) if self.delays[k] else np.array([np.nan])
-            out[f"{name}_delay_ms"] = np.nanmean(d)
-            out[f"{name}_delay_p95_ms"] = np.nanpercentile(d, 95)
-            out[f"{name}_plr"] = self.dropped_bits[m].sum() / max(self.arrived_bits[m].sum(), 1)
+            if len(self.delays[k]) > 0:
+                d = np.array(self.delays[k])
+                out[f"{name}_delay_ms"] = float(np.mean(d))
+                out[f"{name}_delay_p95_ms"] = float(np.percentile(d, 95))
+            else:
+                out[f"{name}_delay_ms"] = 0.0
+                out[f"{name}_delay_p95_ms"] = 0.0
+            out[f"{name}_plr"] = float(self.dropped_bits[m].sum() / max(self.arrived_bits[m].sum(), 1))
         rt = self.cls != BE
         plr_u = self.dropped_bits / np.maximum(self.arrived_bits, 1)
         limit = np.where(self.cls == VOIP, 0.01, 0.02)

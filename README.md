@@ -292,18 +292,32 @@ pulse-lte/
 ├── sensitivity.py       energy-delay knob and CQI-delay studies
 ├── plots.py             all figures
 ├── quick_check.py       one-screen comparison (≈1 min)
-├── serve.py             classroom server: run the dashboard from your laptop, phones join over Wi-Fi
-├── dashboard/index.html live demo (works inside Claude or via serve.py)
+├── serve.py             classroom server with REST APIs: /api/simulate, /api/compare, /api/schemes, /api/summary
+├── dashboard/index.html modern dark navy telecom NOC dashboard with 5-scheduler comparison & educational guide
 ├── dashboard/vendor/    QR-code library bundled for offline use (MIT)
-└── results/             CSVs and PNGs
+├── tests/               automated unit test suite (simulation engine, schedulers, and server APIs)
+└── results/             CSVs and PNG figures
 ```
 
+### Running the Project
+
 ```bash
+# 1. Install dependencies
 pip install -r requirements.txt
-python quick_check.py              # fast sanity table
-python experiments.py              # full sweep (≈12 min on 2 cores)
-python sensitivity.py              # ≈5 min
-python plots.py                    # figures into results/
+
+# 2. Run the automated unit test suite
+python -m unittest discover -s tests -p "test_*.py"
+
+# 3. Launch the modern telecom NOC dashboard server
+python serve.py
+# -> Open http://localhost:8000 on your laptop / projector
+# -> Students/professors can scan the on-screen QR code to join live via Wi-Fi
+
+# 4. Command-line simulation experiments
+python quick_check.py              # fast side-by-side verification table
+python experiments.py              # full sweep across loads [0.3, 0.6, 0.9, 1.2, 1.5]
+python sensitivity.py              # energy-delay and CQI feedback delay sensitivity
+python plots.py                    # generate publication figures in results/
 ```
 
 Single run in Python:
@@ -313,6 +327,31 @@ from pulse import SimConfig, LTESimulator
 cfg = SimConfig(scheduler="pulse", ica=True, olla=True, sfr=True, energy=True, load_scale=0.6)
 print(LTESimulator(cfg).run())
 ```
+
+---
+
+## 8.1 Model Assumptions and Limitations
+
+> [!NOTE]
+> **Academic Disclosure:** This project is a software-based discrete-time (1 TTI = 1 ms) simulation of an LTE downlink cellular network, implemented according to 3GPP specifications for academic research and educational evaluation. It is not connected to physical cellular base station hardware or live spectrum.
+
+1. **Cell Layout & Propagation:**
+   - 7-cell hexagonal cluster with inter-site distance (ISD) of 500 m (3GPP urban macro scenario TR 36.814).
+   - Distance-dependent macro pathloss: `PL = 128.1 + 37.6 * log10(d_km)`.
+   - Log-normal shadow fading standard deviation: 8 dB.
+   - Small-scale Rayleigh fading per CQI sub-band follows Jakes/Clarke spectrum with AR(1) temporal correlation based on UE mobility speed (default 30 km/h).
+2. **Radio Resource Partitioning:**
+   - 5 MHz channel bandwidth yielding 25 Physical Resource Blocks (PRBs).
+   - Single-Input Single-Output (SISO) antenna configuration.
+   - 120 user data Resource Elements (REs) per PRB per TTI after control channel (PDCCH) and reference signal (CRS) overhead.
+3. **Traffic & Queue Dynamics:**
+   - VoIP: 328-bit AMR 12.2 kbps packet every 20 ms with 100 ms hard delay deadline (QCI 1).
+   - Video: log-normally distributed frame arrivals every 40 ms (25 fps, 450 kbps mean) with 300 ms deadline (QCI 2).
+   - Best-Effort: Poisson burst arrivals with exponentially distributed file sizes (80 kbit mean).
+4. **Energy Model:**
+   - Base station power follows the EARTH consortium macro power model: $P_{active} = 130\text{ W} + 4.7 \times 20\text{ W} \times \frac{\text{PRBs}_{tx}}{25}$ and $P_{sleep} = 75\text{ W}$ in micro-sleep DTX.
+5. **BYOD Mobile Device Mode:**
+   - Web browsers cannot directly measure physical cellular RSRP/CQI hardware registers due to operating system sandboxing. When devices join via the QR code (`#join`), their selected location and traffic class drive a simulated UE experiencing the exact 3GPP propagation models.
 
 ---
 

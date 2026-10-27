@@ -1,4 +1,4 @@
-"""Quick side-by-side of all schemes at two loads (one seed). Usage: python quick_check.py"""
+import os
 import sys
 from multiprocessing import Pool
 
@@ -18,8 +18,10 @@ def run(a):
 
 if __name__ == "__main__":
     loads = (0.4, 1.3)
-    with Pool() as p:
+    workers = max(1, min(os.cpu_count() or 1, 4))
+    with Pool(processes=workers) as p:
         res = p.map(run, [(s, l) for l in loads for s in SCHEMES.values()])
+
     print(f"{'scheme':22s} load " + " ".join(f"{k[:9]:>9s}" for k in KEYS))
     for r in res:
         print(f"{r['scheme']:22s} {r['load']:4} " + " ".join(f"{r[k]:9.3g}" for k in KEYS))

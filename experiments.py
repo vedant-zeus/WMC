@@ -42,8 +42,8 @@ def main():
     a = ap.parse_args()
     os.makedirs("results", exist_ok=True)
     jobs = [(k, l, s, a.tti) for s in range(1, a.seeds + 1) for l in LOADS for k in SCHEMES]
-    print(f"Running {len(jobs)} simulations ({a.tti} TTIs each)...")
-    with Pool() as p:
+    workers = max(1, min(os.cpu_count() or 1, 4))
+    with Pool(processes=workers) as p:
         rows = p.map(_run, jobs, chunksize=1)
     df = pd.DataFrame(rows)
     df.to_csv("results/raw_results.csv", index=False)
